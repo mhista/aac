@@ -5,6 +5,8 @@ import { Img } from "@/components/media/Img";
 import { Reveal } from "@/components/motion/Reveal";
 import { PhotoStrip } from "@/components/media/PhotoStrip";
 import { getEvent, getEventMedia, getEvents } from "@/lib/cms";
+import { ArrowLeft, ArrowRight } from "@/components/ui/Icon";
+import { pageMetadata, JsonLd, eventLd, breadcrumbLd } from "@/lib/seo";
 
 export const revalidate = 3600;
 
@@ -15,17 +17,17 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const event = await getEvent(slug);
-  if (!event) return { title: "Event not found" };
-  return {
+  if (!event) return { title: "Event not found", robots: { index: false, follow: false } };
+  return pageMetadata({
     title: event.title,
-    description: event.subtitle ?? undefined,
-    openGraph: {
-      title: event.title,
-      description: event.subtitle ?? undefined,
-      type: "article",
-      images: event.cover?.url ? [event.cover.url] : undefined,
-    },
-  };
+    description:
+      event.subtitle ??
+      `${event.title} — an All Against Cancer event${event.city ? ` in ${event.city}` : ""}.`,
+    path: `/events/${event.slug}`,
+    image: event.cover?.url ?? null,
+    type: "article",
+    publishedTime: event.starts_at,
+  });
 }
 
 function formatRange(a: string | null, b: string | null) {
@@ -60,12 +62,31 @@ export default async function EventDetailPage({
 
   return (
     <>
+      <JsonLd
+        data={[
+          eventLd({
+            title: event.title,
+            description: event.subtitle,
+            path: `/events/${event.slug}`,
+            image: event.cover?.url ?? null,
+            startsAt: event.starts_at,
+            endsAt: event.ends_at,
+            venue: event.venue,
+            city: event.city,
+            country: event.country,
+          }),
+          breadcrumbLd([
+            { name: "Events", path: "/events" },
+            { name: event.title, path: `/events/${event.slug}` },
+          ]),
+        ]}
+      />
       <div className="wrap pt-28 md:pt-36">
         <Link
           href="/events"
           className="group inline-flex items-center gap-2 text-caption text-[var(--color-text-secondary)] transition-colors duration-hover hover:text-[var(--color-text-primary)]"
         >
-          <span aria-hidden="true" className="transition-transform duration-hover ease-entrance group-hover:-translate-x-1">←</span>
+          <ArrowLeft className="h-4 w-4 shrink-0 transition-transform duration-hover ease-entrance group-hover:-translate-x-1" />
           All events
         </Link>
       </div>
@@ -178,7 +199,7 @@ export default async function EventDetailPage({
               <p className="mono">Next event</p>
               <p className="font-display text-[clamp(1.75rem,1.2rem+2.2vw,3rem)] text-[var(--color-text-display)]">
                 {next.title}
-                <span aria-hidden="true" className="ml-4 inline-block transition-transform duration-hover ease-entrance group-hover:translate-x-2">→</span>
+                <ArrowRight className="ml-4 inline-block h-[0.8em] w-[0.8em] align-baseline transition-transform duration-hover ease-entrance group-hover:translate-x-2" />
               </p>
             </div>
           </Link>

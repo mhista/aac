@@ -7,6 +7,7 @@ import clsx from "clsx";
 import { NAV, ORG } from "@/lib/org";
 import { Button } from "./Button";
 import { SocialIcon } from "./SocialIcon";
+import { ChevronDown, Close } from "./Icon";
 
 /**
  * Floating pill navigation.
@@ -80,7 +81,7 @@ export function Nav() {
                   aria-expanded={"children" in item ? openMenu === item.label : undefined}
                 >
                   {item.label}
-                  {"children" in item && <span aria-hidden="true" className="ml-1.5 text-[.65em] opacity-60">▾</span>}
+                  {"children" in item && <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />}
                 </Link>
 
                 {"children" in item && openMenu === item.label && (
@@ -150,9 +151,9 @@ export function Nav() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Close menu"
-              className="grid h-11 w-11 place-items-center rounded-pill text-2xl"
+              className="grid h-11 w-11 place-items-center rounded-pill"
             >
-              ×
+              <Close className="h-5 w-5" />
             </button>
           </div>
 

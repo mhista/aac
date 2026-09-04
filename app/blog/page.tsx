@@ -1,15 +1,17 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { PageHero } from "@/components/ui/PageHero";
 import { PostCard } from "@/components/sections/PostsPreview";
 import { Empty } from "@/components/ui/Empty";
 import { Reveal } from "@/components/motion/Reveal";
 import { getPosts } from "@/lib/cms";
 
+export const metadata = pageMetadata({
+  title: 'Blog',
+  description: 'Evidence-based writing on cancer prevention, early detection, survivorship, research and innovation in Africa.',
+  path: '/blog',
+});
+
 export const revalidate = 3600;
-export const metadata: Metadata = {
-  title: "Blog",
-  description: "Evidence-based writing on cancer prevention, early detection, survivorship, research and innovation in Africa.",
-};
 
 export default async function BlogPage() {
   const posts = await getPosts();

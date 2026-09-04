@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { PageHero } from "@/components/ui/PageHero";
 import { Reveal } from "@/components/motion/Reveal";
 import { ORG } from "@/lib/org";
+import { pageMetadata } from "@/lib/seo";
 
 /**
  * Legal pages.
@@ -142,8 +143,8 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const doc = DOCS[slug];
-  if (!doc) return { title: "Not found" };
-  return { title: doc.title, description: doc.lede };
+  if (!doc) return { title: "Not found", robots: { index: false, follow: false } };
+  return pageMetadata({ title: doc.title, description: doc.lede, path: `/legal/${slug}` });
 }
 
 export default async function LegalPage({ params }: { params: Promise<{ slug: string }> }) {

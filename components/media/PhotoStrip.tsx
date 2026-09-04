@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Img } from "@/components/media/Img";
 import type { MediaRef } from "@/lib/cms";
+import { ArrowLeft, ArrowRight, Close } from "@/components/ui/Icon";
 
 /**
  * Horizontal scrolling photo strip with a lightbox — the core of an event page.
@@ -97,9 +98,9 @@ export function PhotoStrip({ photos, title }: { photos: MediaRef[]; title: strin
               type="button"
               onClick={close}
               aria-label="Close"
-              className="grid h-11 w-11 place-items-center rounded-pill text-2xl hover:bg-white/10"
+              className="grid h-11 w-11 place-items-center rounded-pill hover:bg-white/10"
             >
-              ×
+              <Close className="h-5 w-5" />
             </button>
           </div>
 
@@ -122,17 +123,17 @@ export function PhotoStrip({ photos, title }: { photos: MediaRef[]; title: strin
             <button
               type="button"
               onClick={() => step(-1)}
-              className="min-h-[44px] rounded-pill px-4 text-caption hover:bg-white/10"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-pill px-4 text-caption hover:bg-white/10"
             >
-              ← Previous
+              <ArrowLeft className="h-4 w-4" /> Previous
             </button>
             <p className="text-caption text-white/70">{photos[open].alt}</p>
             <button
               type="button"
               onClick={() => step(1)}
-              className="min-h-[44px] rounded-pill px-4 text-caption hover:bg-white/10"
+              className="inline-flex min-h-[44px] items-center gap-2 rounded-pill px-4 text-caption hover:bg-white/10"
             >
-              Next →
+              Next <ArrowRight className="h-4 w-4" />
             </button>
           </div>
         </div>

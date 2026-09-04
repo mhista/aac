@@ -1,14 +1,15 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { PageHero } from "@/components/ui/PageHero";
 import { Img } from "@/components/media/Img";
 import { Reveal } from "@/components/motion/Reveal";
 import { CtaBand } from "@/components/sections/CtaBand";
 import { ORG } from "@/lib/org";
 
-export const metadata: Metadata = {
-  title: "What We Do",
-  description: "The six areas All Against Cancer works in: awareness and advocacy, patient and survivor support, medication access, research, education and innovation, and campus chapters.",
-};
+export const metadata = pageMetadata({
+  title: 'What We Do',
+  description: 'The six areas All Against Cancer works in: awareness and advocacy, patient and survivor support, medication access, research, education and innovation, and campus chapters.',
+  path: '/what-we-do',
+});
 
 const CATEGORY: Record<string, { label: string; surface: string; text: string }> = {
   awareness:  { label: "Awareness",  surface: "var(--color-category-awareness-surface)",  text: "var(--color-category-awareness-text)" },

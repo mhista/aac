@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { PageHero } from "@/components/ui/PageHero";
 import { Steps } from "@/components/ui/Steps";
 import { ApplyPanel } from "@/components/ui/ApplyPanel";
@@ -7,11 +7,13 @@ import { Reveal } from "@/components/motion/Reveal";
 import { getChapters } from "@/lib/cms";
 import { ORG } from "@/lib/org";
 
+export const metadata = pageMetadata({
+  title: 'University Chapters',
+  description: 'AAC campus chapters run awareness, screening and education work at universities across Nigeria, Ghana and Kenya.',
+  path: '/get-involved/chapters',
+});
+
 export const revalidate = 3600;
-export const metadata: Metadata = {
-  title: "University Chapters",
-  description: "AAC campus chapters run awareness, screening and education work at universities across Nigeria, Ghana and Kenya.",
-};
 
 export default async function ChaptersPage() {
   const chapters = await getChapters();

@@ -1,13 +1,15 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import Link from "next/link";
 import { PageHero } from "@/components/ui/PageHero";
 import { Reveal } from "@/components/motion/Reveal";
 import { ORG } from "@/lib/org";
+import { ArrowRight } from "@/components/ui/Icon";
 
-export const metadata: Metadata = {
-  title: "Get Involved",
-  description: "Become a cancer advocate, join the AAC Fellowship, start a campus chapter, volunteer, or partner with All Against Cancer.",
-};
+export const metadata = pageMetadata({
+  title: 'Get Involved',
+  description: 'Become a cancer advocate, join the AAC Fellowship, start a campus chapter, volunteer your skills, or partner with All Against Cancer.',
+  path: '/get-involved',
+});
 
 const ROUTES = [
   { href: "/get-involved/advocates", title: "Become an Advocate", body: "The main way in. Learn what you need to know about cancer, then take it to the people around you.", who: "Anyone, anywhere" },
@@ -36,7 +38,7 @@ export default function GetInvolvedPage() {
                       <span className="mt-2 block max-w-[56ch] text-caption leading-body text-[var(--color-text-secondary)]">{r.body}</span>
                       <span className="mono mt-3 block">{r.who}</span>
                     </span>
-                    <span aria-hidden="true" className="hidden text-2xl text-[var(--color-text-emphasis)] transition-transform duration-hover ease-entrance group-hover:translate-x-2 md:block">→</span>
+                    <ArrowRight className="hidden h-6 w-6 text-[var(--color-text-emphasis)] transition-transform duration-hover ease-entrance group-hover:translate-x-2 md:block" />
                   </Link>
                 </li>
               </Reveal>

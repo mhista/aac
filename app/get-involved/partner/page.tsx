@@ -1,15 +1,17 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { PageHero } from "@/components/ui/PageHero";
 import { ApplyPanel } from "@/components/ui/ApplyPanel";
 import { Empty } from "@/components/ui/Empty";
 import { Reveal } from "@/components/motion/Reveal";
 import { getPartners } from "@/lib/cms";
 
+export const metadata = pageMetadata({
+  title: 'Partner with us',
+  description: 'AAC partners with hospitals, cancer centres, universities, pharmacies, pharmaceutical and biotechnology companies, government agencies, NGOs and funders.',
+  path: '/get-involved/partner',
+});
+
 export const revalidate = 3600;
-export const metadata: Metadata = {
-  title: "Partner with us",
-  description: "AAC works with hospitals, cancer centres, universities, pharmacies, pharmaceutical and biotechnology companies, government agencies, NGOs, technology companies and funders.",
-};
 
 const KINDS = [
   { title: "Hospitals & cancer centres", body: "Screening partnerships, referral routes, and support for patients who reach you late." },

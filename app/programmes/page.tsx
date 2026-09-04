@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import Link from "next/link";
 import { PageHero } from "@/components/ui/PageHero";
 import { Img } from "@/components/media/Img";
@@ -6,11 +6,13 @@ import { Empty } from "@/components/ui/Empty";
 import { Reveal } from "@/components/motion/Reveal";
 import { getProgrammes } from "@/lib/cms";
 
+export const metadata = pageMetadata({
+  title: 'Programmes',
+  description: 'Awareness campaigns, screening drives, patient support, research and innovation programmes run by All Against Cancer.',
+  path: '/programmes',
+});
+
 export const revalidate = 3600;
-export const metadata: Metadata = {
-  title: "Programmes",
-  description: "Awareness campaigns, screening drives, patient support, research and innovation programmes run by All Against Cancer.",
-};
 
 export default async function ProgrammesPage() {
   const programmes = await getProgrammes();

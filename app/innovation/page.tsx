@@ -1,11 +1,7 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { Reveal } from "@/components/motion/Reveal";
 import { ApplyPanel } from "@/components/ui/ApplyPanel";
 
-export const metadata: Metadata = {
-  title: "UgwuMind — Education & Innovation",
-  description: "UgwuMind is AAC's innovation work: exploring how AI, digital health and computational methods can contribute to cancer prevention, screening, diagnosis, research and drug discovery in low-resource settings.",
-};
 
 export default function InnovationPage() {
   return (

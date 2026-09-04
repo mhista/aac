@@ -1,12 +1,13 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { PageHero } from "@/components/ui/PageHero";
 import { ApplyPanel } from "@/components/ui/ApplyPanel";
 import { Reveal } from "@/components/motion/Reveal";
 
-export const metadata: Metadata = {
-  title: "Volunteer",
-  description: "Give your skills to All Against Cancer — design, writing, translation, data, software, photography, events and more.",
-};
+export const metadata = pageMetadata({
+  title: 'Volunteer',
+  description: 'Give your skills to All Against Cancer — design, writing, translation, data, software, photography, events and research support.',
+  path: '/get-involved/volunteer',
+});
 
 const NEEDS = [
   { area: "Design & illustration", detail: "Campaign graphics, printed materials, infographics that make prevention information easy to understand." },

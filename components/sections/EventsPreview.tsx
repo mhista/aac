@@ -3,6 +3,7 @@ import { Img } from "@/components/media/Img";
 import { Reveal } from "@/components/motion/Reveal";
 import { Empty } from "@/components/ui/Empty";
 import type { EventRecord } from "@/lib/cms";
+import { ArrowRight } from "@/components/ui/Icon";
 
 function dateRange(a: string | null, b: string | null) {
   if (!a) return null;
@@ -58,7 +59,7 @@ export function EventsPreview({ events }: { events: EventRecord[] }) {
             {events.length > 0 && (
               <Link href="/events" className="group inline-flex items-center gap-2 text-body text-[var(--color-text-emphasis)]">
                 All events
-                <span aria-hidden="true" className="transition-transform duration-hover ease-entrance group-hover:translate-x-1">→</span>
+                <ArrowRight className="h-4 w-4 shrink-0 transition-transform duration-hover ease-entrance group-hover:translate-x-1" />
               </Link>
             )}
           </div>

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { PageHero } from "@/components/ui/PageHero";
 import { Img } from "@/components/media/Img";
 import { Reveal } from "@/components/motion/Reveal";
@@ -8,11 +8,13 @@ import { CtaBand } from "@/components/sections/CtaBand";
 import { getTeam } from "@/lib/cms";
 import { ORG } from "@/lib/org";
 
+export const metadata = pageMetadata({
+  title: 'About',
+  description: 'Who we are: our mission, our values, how AAC is organised, and the board and directors leading the work across Nigeria, Ghana and Kenya.',
+  path: '/about',
+});
+
 export const revalidate = 3600;
-export const metadata: Metadata = {
-  title: "About",
-  description: ORG.mission,
-};
 
 export default async function AboutPage() {
   const team = await getTeam();

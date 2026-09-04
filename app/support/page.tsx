@@ -1,14 +1,15 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { PageHero } from "@/components/ui/PageHero";
 import { Empty } from "@/components/ui/Empty";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/motion/Reveal";
 import { ORG, MEDICAL_NOTICE } from "@/lib/org";
 
-export const metadata: Metadata = {
-  title: "Patient & Survivor Support",
-  description: "If you or someone you love is facing cancer, this page explains what All Against Cancer can and cannot do, and how to reach us.",
-};
+export const metadata = pageMetadata({
+  title: 'Patient & Survivor Support',
+  description: 'If you or someone you love is facing cancer, this page explains what All Against Cancer can and cannot do, and how to reach our support team.',
+  path: '/support',
+});
 
 /**
  * The Support page.

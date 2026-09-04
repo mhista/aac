@@ -1,5 +1,6 @@
 import Link from "next/link";
 import clsx from "clsx";
+import { ArrowRight } from "./Icon";
 
 type Variant = "primary" | "secondary" | "ghost" | "on-inverse";
 type Size = "sm" | "md" | "lg";
@@ -45,9 +46,7 @@ export function Button({
     <>
       {children}
       {arrow && (
-        <span aria-hidden="true" className="transition-transform duration-hover ease-entrance group-hover:translate-x-1">
-          →
-        </span>
+        <ArrowRight className="h-[1.05em] w-[1.05em] shrink-0 transition-transform duration-hover ease-entrance group-hover:translate-x-1" />
       )}
     </>
   );

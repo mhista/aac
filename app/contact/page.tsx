@@ -1,13 +1,14 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { PageHero } from "@/components/ui/PageHero";
 import { Reveal } from "@/components/motion/Reveal";
 import { SocialIcon } from "@/components/ui/SocialIcon";
 import { ORG } from "@/lib/org";
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description: `Get in touch with ${ORG.name} — general enquiries, partnerships, media, and patient and survivor support.`,
-};
+export const metadata = pageMetadata({
+  title: 'Contact',
+  description: 'Get in touch with All Against Cancer — general enquiries, partnerships, media, and patient and survivor support.',
+  path: '/contact',
+});
 
 const ROUTES = [
   { title: "General enquiries", body: "Questions about our work, chapters, volunteering or anything else.", email: ORG.email.general },

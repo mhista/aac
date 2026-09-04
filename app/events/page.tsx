@@ -1,17 +1,17 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { PageHero } from "@/components/ui/PageHero";
 import { EventCard } from "@/components/sections/EventsPreview";
 import { Empty } from "@/components/ui/Empty";
 import { Reveal } from "@/components/motion/Reveal";
 import { getEvents } from "@/lib/cms";
 
-export const revalidate = 3600;
+export const metadata = pageMetadata({
+  title: 'Events',
+  description: 'Cancer screenings, campus outreach, training and community sessions run by All Against Cancer across Nigeria, Ghana and Kenya.',
+  path: '/events',
+});
 
-export const metadata: Metadata = {
-  title: "Events",
-  description:
-    "Screenings, campus outreach, training and community sessions run by All Against Cancer across Nigeria, Ghana and Kenya.",
-};
+export const revalidate = 3600;
 
 export default async function EventsPage() {
   const events = await getEvents();

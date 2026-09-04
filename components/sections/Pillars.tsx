@@ -3,6 +3,7 @@ import { Img } from "@/components/media/Img";
 import { Reveal } from "@/components/motion/Reveal";
 import { StackCards } from "@/components/motion/StackCards";
 import { ORG } from "@/lib/org";
+import { ArrowRight } from "@/components/ui/Icon";
 
 const CATEGORY: Record<string, { label: string; surface: string; text: string }> = {
   awareness:  { label: "Awareness",  surface: "var(--color-category-awareness-surface)",  text: "var(--color-category-awareness-text)" },
@@ -50,7 +51,7 @@ function PillarCard({ pillar, index }: { pillar: (typeof ORG.pillars)[number]; i
 
         <span className="mt-5 inline-flex items-center gap-2 text-caption text-[var(--color-text-emphasis)]">
           Read more
-          <span aria-hidden="true" className="transition-transform duration-hover ease-entrance group-hover:translate-x-1">→</span>
+          <ArrowRight className="h-4 w-4 shrink-0 transition-transform duration-hover ease-entrance group-hover:translate-x-1" />
         </span>
       </div>
     </Link>
@@ -80,7 +81,7 @@ export function Pillars() {
             </div>
             <Link href="/what-we-do" className="group inline-flex items-center gap-2 text-body text-[var(--color-text-emphasis)]">
               View all
-              <span aria-hidden="true" className="transition-transform duration-hover ease-entrance group-hover:translate-x-1">→</span>
+              <ArrowRight className="h-4 w-4 shrink-0 transition-transform duration-hover ease-entrance group-hover:translate-x-1" />
             </Link>
           </div>
         </Reveal>

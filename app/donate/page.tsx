@@ -1,13 +1,14 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { PageHero } from "@/components/ui/PageHero";
 import { Button } from "@/components/ui/Button";
 import { Reveal } from "@/components/motion/Reveal";
 import { ORG } from "@/lib/org";
 
-export const metadata: Metadata = {
-  title: "Donate",
-  description: `Support the work of ${ORG.name} — cancer awareness, patient support, research and access to care across Africa.`,
-};
+export const metadata = pageMetadata({
+  title: 'Donate',
+  description: 'Support cancer awareness, patient support, research and access to care across Africa. Registered with the Corporate Affairs Commission, Nigeria.',
+  path: '/donate',
+});
 
 /**
  * Donate.

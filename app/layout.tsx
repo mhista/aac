@@ -3,9 +3,10 @@ import "./globals.css";
 import { Nav } from "@/components/ui/Nav";
 import { Footer } from "@/components/ui/Footer";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
+import { ScrollTop } from "@/components/ui/ScrollTop";
 import { ORG } from "@/lib/org";
+import { JsonLd, organizationLd, websiteLd, SITE } from "@/lib/seo";
 
-const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://aaci.ngo";
 
 
 export const metadata: Metadata = {
@@ -27,11 +28,13 @@ export const metadata: Metadata = {
     description: ORG.visionShort,
     url: SITE,
     locale: "en_NG",
+    images: [{ url: "/og-default.jpg", width: 1200, height: 630, alt: `${ORG.name} — ${ORG.tagline}` }],
   },
   twitter: {
     card: "summary_large_image",
     title: `${ORG.name} — ${ORG.tagline}`,
     description: ORG.visionShort,
+    images: ["/og-default.jpg"],
   },
   icons: {
     icon: [
@@ -40,7 +43,17 @@ export const metadata: Metadata = {
     ],
     apple: "/aac-icon-192.png",
   },
-  robots: { index: true, follow: true },
+  alternates: { canonical: SITE },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
+  },
+  category: "Health",
+  authors: [{ name: ORG.name, url: SITE }],
+  creator: ORG.name,
+  publisher: ORG.name,
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
@@ -49,26 +62,6 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-/** Organisation structured data — helps search engines identify a real NGO. */
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "NGO",
-  name: ORG.name,
-  alternateName: ORG.abbr,
-  url: SITE,
-  logo: `${SITE}/aac-icon-512.png`,
-  slogan: ORG.tagline,
-  description: ORG.mission,
-  email: ORG.email.general,
-  areaServed: ORG.countries,
-  address: { "@type": "PostalAddress", addressCountry: "NG" },
-  identifier: {
-    "@type": "PropertyValue",
-    name: "Corporate Affairs Commission Registration Number",
-    value: ORG.registration.number,
-  },
-  sameAs: ORG.social.map((s) => s.url),
-};
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -80,17 +73,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=Instrument+Sans:wght@400..600&family=JetBrains+Mono:wght@400;500&display=swap"
         />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-        />
+        <JsonLd data={[organizationLd(), websiteLd()]} />
       </head>
       <body>
         <a href="#main" className="skip-link">Skip to content</a>
         <SmoothScroll />
         <Nav />
-        <main id="main">{children}</main>
+        <main id="main" tabIndex={-1}>{children}</main>
         <Footer />
+        <ScrollTop />
       </body>
     </html>
   );

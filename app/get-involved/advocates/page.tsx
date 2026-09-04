@@ -1,14 +1,15 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { PageHero } from "@/components/ui/PageHero";
 import { Steps } from "@/components/ui/Steps";
 import { ApplyPanel } from "@/components/ui/ApplyPanel";
 import { Reveal } from "@/components/motion/Reveal";
 import { Img } from "@/components/media/Img";
 
-export const metadata: Metadata = {
-  title: "Become a Cancer Advocate",
-  description: "Join 800+ AAC Cancer Advocates across Nigeria, Ghana and Kenya. Learn, act, report your impact, and earn a Certificate of Impact based on what you actually did.",
-};
+export const metadata = pageMetadata({
+  title: 'Become a Cancer Advocate',
+  description: 'Join 800+ AAC Cancer Advocates across Nigeria, Ghana and Kenya. Learn, act, report your impact, and earn a Certificate of Impact based on what you actually did.',
+  path: '/get-involved/advocates',
+});
 
 export default function AdvocatesPage() {
   return (

@@ -4,14 +4,21 @@ import { notFound } from "next/navigation";
 import { Img } from "@/components/media/Img";
 import { Reveal } from "@/components/motion/Reveal";
 import { getProgramme } from "@/lib/cms";
+import { ArrowLeft, ArrowRight } from "@/components/ui/Icon";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 
 export const revalidate = 3600;
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const p = await getProgramme(slug);
-  if (!p) return { title: "Programme not found" };
-  return { title: p.title, description: p.excerpt ?? undefined };
+  if (!p) return { title: "Programme not found", robots: { index: false, follow: false } };
+  return pageMetadata({
+    title: p.title,
+    description: p.excerpt ?? `${p.title} — an All Against Cancer programme.`,
+    path: `/programmes/${p.slug}`,
+    image: p.cover?.url ?? null,
+  });
 }
 
 export default async function ProgrammeDetail({ params }: { params: Promise<{ slug: string }> }) {
@@ -21,9 +28,15 @@ export default async function ProgrammeDetail({ params }: { params: Promise<{ sl
 
   return (
     <>
+      <JsonLd
+        data={breadcrumbLd([
+          { name: "Programmes", path: "/programmes" },
+          { name: p.title, path: `/programmes/${p.slug}` },
+        ])}
+      />
       <div className="wrap pt-28 md:pt-36">
         <Link href="/programmes" className="group inline-flex items-center gap-2 text-caption text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
-          <span aria-hidden="true" className="transition-transform duration-hover ease-entrance group-hover:-translate-x-1">←</span>
+          <ArrowLeft className="h-4 w-4 shrink-0 transition-transform duration-hover ease-entrance group-hover:-translate-x-1" />
           All programmes
         </Link>
       </div>

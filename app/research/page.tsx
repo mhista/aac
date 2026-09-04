@@ -1,14 +1,15 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { PageHero } from "@/components/ui/PageHero";
 import { Empty } from "@/components/ui/Empty";
 import { ApplyPanel } from "@/components/ui/ApplyPanel";
 import { Reveal } from "@/components/motion/Reveal";
 import { Img } from "@/components/media/Img";
 
-export const metadata: Metadata = {
-  title: "Research",
-  description: "AAC supports cancer research that answers questions relevant to African communities — prevention, early detection, access to treatment, health systems and epidemiology.",
-};
+export const metadata = pageMetadata({
+  title: 'Research',
+  description: 'AAC supports cancer research answering questions relevant to African communities: prevention, early detection, access to treatment, health systems and epidemiology.',
+  path: '/research',
+});
 
 const PRIORITIES = [
   "Cancer prevention", "Early detection", "Access to treatment", "Cancer medicines",

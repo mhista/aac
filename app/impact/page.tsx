@@ -1,15 +1,17 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { PageHero } from "@/components/ui/PageHero";
 import { ImpactStats } from "@/components/sections/ImpactStats";
 import { Reveal } from "@/components/motion/Reveal";
 import { getImpactMetrics } from "@/lib/cms";
 import { ORG } from "@/lib/org";
 
+export const metadata = pageMetadata({
+  title: 'Impact',
+  description: 'The real numbers behind All Against Cancer — advocates, leaders, countries, students engaged and patients supported — and exactly how we count them.',
+  path: '/impact',
+});
+
 export const revalidate = 3600;
-export const metadata: Metadata = {
-  title: "Impact",
-  description: "The real numbers behind All Against Cancer — advocates, leaders, countries, students engaged, patients supported — and how we count them.",
-};
 
 export default async function ImpactPage() {
   const metrics = await getImpactMetrics();

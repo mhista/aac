@@ -1,13 +1,14 @@
-import type { Metadata } from "next";
+import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { PageHero } from "@/components/ui/PageHero";
 import { Steps } from "@/components/ui/Steps";
 import { ApplyPanel } from "@/components/ui/ApplyPanel";
 import { Reveal } from "@/components/motion/Reveal";
 
-export const metadata: Metadata = {
-  title: "AAC Fellowship",
-  description: "A leadership and capacity-building programme equipping young Africans to become advocates, researchers and changemakers in the fight against cancer.",
-};
+export const metadata = pageMetadata({
+  title: 'AAC Fellowship',
+  description: 'A leadership and capacity-building programme equipping young Africans to become cancer advocates, researchers and changemakers.',
+  path: '/get-involved/fellowship',
+});
 
 export default function FellowshipPage() {
   return (
