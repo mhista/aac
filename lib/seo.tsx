@@ -73,19 +73,31 @@ export function pageMetadata({
 
 /* ── Structured data ────────────────────────────────────────────────── */
 
-export function organizationLd() {
+export function organizationLd(s?: {
+  name: string;
+  tagline: string;
+  email: { general: string };
+  social: { name: string; url: string; profile: boolean }[];
+}) {
+  /* Falls back to the coded values, so this stays callable without arguments
+     and never renders empty structured data. */
+  const name = s?.name ?? ORG.name;
+  const tagline = s?.tagline ?? ORG.tagline;
+  const email = s?.email.general ?? ORG.email.general;
+  const social = s?.social ?? ORG.social;
+
   return {
     "@context": "https://schema.org",
     "@type": "NGO",
     "@id": `${SITE}/#organization`,
-    name: ORG.name,
+    name,
     alternateName: [ORG.abbr, ORG.shortName],
     url: SITE,
     logo: { "@type": "ImageObject", url: absolute("/aac-icon-512.png"), width: 512, height: 512 },
     image: DEFAULT_OG,
-    slogan: ORG.tagline,
+    slogan: tagline,
     description: ORG.mission,
-    email: ORG.email.general,
+    email,
     foundingLocation: { "@type": "Country", name: "Nigeria" },
     areaServed: ORG.countries.map((name) => ({ "@type": "Country", name })),
     address: { "@type": "PostalAddress", addressCountry: "NG" },
@@ -103,7 +115,7 @@ export function organizationLd() {
       {
         "@type": "ContactPoint",
         contactType: "general enquiries",
-        email: ORG.email.general,
+        email,
         areaServed: ORG.countries,
         availableLanguage: "English",
       },
@@ -117,7 +129,7 @@ export function organizationLd() {
     ],
     /* Only official profile pages. A post URL here is invalid and gets
        discarded, which weakens the entity signal rather than helping it. */
-    sameAs: ORG.social.filter((s) => s.profile).map((s) => s.url),
+    sameAs: social.filter((x) => x.profile).map((x) => x.url),
   };
 }
 

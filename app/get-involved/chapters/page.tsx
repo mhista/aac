@@ -103,6 +103,7 @@ export default async function ChaptersPage() {
           title="Start a chapter"
           body="Tell us your university, your country and who else is with you. Chapters are approved by the regional coordinator for your area."
           subject="Start an AAC chapter"
+          interest="chapter"
         />
       </div>
     </>

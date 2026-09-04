@@ -6,10 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import clsx from "clsx";
 import { createClient } from "@/lib/supabase/client";
 import { Close, Menu } from "@/components/ui/Icon";
-import {
-  ROLE_LABEL, canWrite, canSeeCrm, canSeeSettings, canSeeAudit, rank,
-  type Profile,
-} from "@/lib/auth/permissions";
+import { ROLE_LABEL, type Profile } from "@/lib/auth/permissions";
+import { canRead, type Area } from "@/lib/auth/capabilities";
 
 /**
  * Dashboard shell.
@@ -24,43 +22,43 @@ import {
  * feels built for you and one that feels like it is refusing you.
  */
 
-type NavItem = { label: string; href: string; show: (p: Profile) => boolean };
+type NavItem = { label: string; href: string; area: Area };
 type NavGroup = { group: string; items: NavItem[] };
 
 const NAV: NavGroup[] = [
   {
     group: "Content",
     items: [
-      { label: "Events", href: "/dashboard/events", show: () => true },
-      { label: "Blog", href: "/dashboard/blog", show: canWrite },
-      { label: "Programmes", href: "/dashboard/programmes", show: canWrite },
-      { label: "Pages", href: "/dashboard/pages", show: (p) => rank(p) >= 60 },
-      { label: "Media", href: "/dashboard/media", show: canWrite },
+      { label: "Events", href: "/dashboard/events", area: "events" },
+      { label: "Blog", href: "/dashboard/blog", area: "blog" },
+      { label: "Programmes", href: "/dashboard/programmes", area: "programmes" },
+      { label: "Pages", href: "/dashboard/pages", area: "pages" },
+      { label: "Media", href: "/dashboard/media", area: "media" },
     ],
   },
   {
     group: "People",
     items: [
-      { label: "Chapters", href: "/dashboard/chapters", show: canSeeCrm },
-      { label: "Advocates", href: "/dashboard/people", show: canSeeCrm },
-      { label: "Applications", href: "/dashboard/applications", show: canSeeCrm },
-      { label: "Impact reports", href: "/dashboard/impact-reports", show: canSeeCrm },
+      { label: "Chapters", href: "/dashboard/chapters", area: "chapters" },
+      { label: "Advocates", href: "/dashboard/people", area: "advocates" },
+      { label: "Applications", href: "/dashboard/applications", area: "applications" },
+      { label: "Impact reports", href: "/dashboard/impact-reports", area: "impactReports" },
     ],
   },
   {
     group: "Organisation",
     items: [
-      { label: "Impact metrics", href: "/dashboard/impact", show: canWrite },
-      { label: "Team & directors", href: "/dashboard/team", show: canWrite },
-      { label: "Enquiries", href: "/dashboard/enquiries", show: canSeeCrm },
+      { label: "Impact metrics", href: "/dashboard/impact", area: "impactMetrics" },
+      { label: "Team & directors", href: "/dashboard/team", area: "team" },
+      { label: "Enquiries", href: "/dashboard/enquiries", area: "enquiries" },
     ],
   },
   {
     group: "Settings",
     items: [
-      { label: "Users & roles", href: "/dashboard/users", show: canSeeSettings },
-      { label: "Site settings", href: "/dashboard/settings", show: canSeeSettings },
-      { label: "Audit log", href: "/dashboard/audit", show: canSeeAudit },
+      { label: "Users & roles", href: "/dashboard/users", area: "users" },
+      { label: "Site settings", href: "/dashboard/settings", area: "settings" },
+      { label: "Audit log", href: "/dashboard/audit", area: "audit" },
     ],
   },
 ];
@@ -77,7 +75,7 @@ export function DashboardShell({
   const [open, setOpen] = useState(false);
 
   const groups = NAV
-    .map((g) => ({ ...g, items: g.items.filter((i) => i.show(profile)) }))
+    .map((g) => ({ ...g, items: g.items.filter((i) => canRead(profile, i.area)) }))
     .filter((g) => g.items.length > 0);
 
   async function signOut() {
@@ -138,11 +136,23 @@ export function DashboardShell({
         </div>
       </header>
 
-      <div className="flex">
+      <div className="flex items-start">
         {/* Sidebar */}
         <aside
+          data-lenis-prevent
           className={clsx(
-            "fixed inset-y-14 left-0 z-20 w-[240px] shrink-0 overflow-y-auto border-r border-[var(--color-border-default)] bg-white px-3 py-5 transition-transform duration-standard ease-entrance lg:sticky lg:top-14 lg:h-[calc(100svh-3.5rem)] lg:translate-x-0",
+            /* Two things are load-bearing here.
+               1. `calc(100svh_-_3.5rem)` — the underscores matter. Tailwind
+                  converts them to spaces, and calc() requires whitespace
+                  around the minus. Written as `calc(100svh-3.5rem)` the
+                  browser discards the declaration, the sidebar gets no
+                  height, and overflow-y-auto has nothing to scroll against.
+               2. `self-start`. A flex child defaults to
+               align-self: stretch, so the sidebar was being stretched to the
+                  align-self: stretch, which makes position:sticky a no-op.
+                  Sticky needs an element shorter than its container. */
+            "fixed bottom-0 left-0 top-14 z-20 w-[240px] shrink-0 overflow-y-auto overscroll-contain border-r border-[var(--color-border-default)] bg-white px-3 py-5 transition-transform duration-standard ease-entrance",
+            "lg:sticky lg:top-14 lg:h-[calc(100svh_-_3.5rem)] lg:self-start lg:translate-x-0",
             open ? "translate-x-0" : "-translate-x-full"
           )}
         >

@@ -17,7 +17,13 @@ export const getProfile = cache(async (): Promise<Profile | null> => {
 
   const { data } = await db
     .from("profiles")
-    .select("id,full_name,email,avatar_url,role,chapter_id,region_id,department_id,status")
+    /* `*`, not a column list. A migration that has not been run yet must never
+       be able to break sign-in: naming a column that does not exist makes the
+       whole query fail, getProfile returns null, the dashboard bounces to
+       /login, middleware sees a valid session and bounces back — an infinite
+       redirect. Selecting everything means a missing column is simply absent
+       from the object, which the code already handles. */
+    .select("*")
     .eq("id", user.id)
     .single();
 

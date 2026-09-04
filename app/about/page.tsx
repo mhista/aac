@@ -6,6 +6,7 @@ import { Empty } from "@/components/ui/Empty";
 import { Values } from "@/components/sections/Values";
 import { CtaBand } from "@/components/sections/CtaBand";
 import { getTeam } from "@/lib/cms";
+import { Avatar } from "@/components/media/Avatar";
 import Link from "next/link";
 import { ArrowRight } from "@/components/ui/Icon";
 import { ORG } from "@/lib/org";
@@ -124,7 +125,7 @@ export default async function AboutPage() {
                 {team.map((m, i) => (
                   <Reveal key={m.id} delay={(i % 4) * 0.07}>
                     <li>
-                      {m.photo?.url && <Img src={m.photo.url} alt={m.photo.alt} ratio="1/1" sizes="280px" className="rounded-lg" />}
+                      <Avatar name={m.full_name} photo={m.photo} className="rounded-lg" />
                       <h3 className="mt-4 font-display text-[1.35rem] text-[var(--color-text-display)]">{m.full_name}</h3>
                       {m.role_title && <p className="mono mt-1">{m.role_title}</p>}
                     </li>

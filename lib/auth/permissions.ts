@@ -8,12 +8,12 @@
 
 export type Role =
   | "super_admin" | "board_member" | "admin" | "department_director"
-  | "regional_coordinator" | "campus_coordinator" | "content_lead"
+  | "regional_coordinator" | "zonal_coordinator" | "campus_coordinator" | "content_lead"
   | "contributor" | "advocate" | "viewer";
 
 export const RANK: Record<Role, number> = {
   super_admin: 100, board_member: 90, admin: 80, department_director: 70,
-  regional_coordinator: 60, campus_coordinator: 50, content_lead: 40,
+  regional_coordinator: 60, zonal_coordinator: 55, campus_coordinator: 50, content_lead: 40,
   contributor: 35, advocate: 30, viewer: 10,
 };
 
@@ -23,6 +23,7 @@ export const ROLE_LABEL: Record<Role, string> = {
   admin: "Admin",
   department_director: "Department director",
   regional_coordinator: "Regional coordinator",
+  zonal_coordinator: "Zonal coordinator",
   campus_coordinator: "Campus coordinator",
   content_lead: "Content lead",
   contributor: "Contributor",
@@ -37,6 +38,7 @@ export interface Profile {
   avatar_url: string | null;
   role: Role;
   chapter_id: string | null;
+  zone_id: string | null;
   region_id: string | null;
   department_id: string | null;
   status: "invited" | "active" | "suspended" | "alumni";

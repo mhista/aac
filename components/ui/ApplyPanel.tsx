@@ -1,32 +1,50 @@
 import { Reveal } from "@/components/motion/Reveal";
 import { Button } from "./Button";
 import { ArrowUpRight } from "./Icon";
+import { CountryPicker } from "./CountryPicker";
+import { WaitlistForm } from "./WaitlistForm";
+import { getApplicationSettings } from "@/lib/cms";
 import { ORG } from "@/lib/org";
 
 /**
  * Application call-to-action.
  *
- * Applications route to a country-specific form. The previous single link
- * opened a sheet that just listed the same two options, so people chose twice
- * — the choice now happens here, in one tap, before they leave the site.
+ * Three states, chosen by the CMS rather than by a deploy:
  *
- * `mailtoOnly` is for panels that are a conversation rather than an
- * application — partnerships, research, UgwuMind — where a sign-up form would
- * read wrong between organisations.
+ *  · OPEN — country forms. Up to five countries show as buttons; past that
+ *    CountryPicker collapses them into one control with a search field.
+ *  · CLOSED — a waitlist. Applications are not always running, and the person
+ *    reading this page is the one most worth keeping hold of, so we take a
+ *    name, an email and a country and email them when the intake opens.
+ *  · mailtoOnly — for panels that are a conversation between organisations
+ *    (partnerships, research, UgwuMind), where a sign-up form reads wrong.
+ *    These ignore the open/closed flag entirely; you can always write to us.
+ *
+ * `interest` tags waitlist rows so the fellowship list and the advocate list
+ * can be emailed separately.
  */
-export function ApplyPanel({
+export async function ApplyPanel({
   title,
   body,
   subject,
   note,
   mailtoOnly = false,
+  interest = "other",
 }: {
   title: string;
   body: string;
   subject: string;
   note?: string;
   mailtoOnly?: boolean;
+  interest?: "advocate" | "fellowship" | "chapter" | "volunteer" | "other";
 }) {
+  const settings = mailtoOnly
+    ? { open: false, closedNote: null, forms: [] }
+    : await getApplicationSettings();
+
+  const hasForms = settings.forms.length > 0;
+  const open = settings.open && hasForms;
+
   return (
     <section className="section">
       <div className="wrap">
@@ -36,37 +54,39 @@ export function ApplyPanel({
             <p className="measure mt-5 text-body leading-body text-[var(--color-text-secondary)]">{body}</p>
 
             {mailtoOnly ? (
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Button href={`mailto:${ORG.email.general}?subject=${encodeURIComponent(subject)}`} size="lg" arrow>
-                  Email us
-                </Button>
-                <Button href="/contact" variant="secondary" size="lg">Ask a question first</Button>
-              </div>
-            ) : (
+              <>
+                <div className="mt-8 flex flex-wrap gap-3">
+                  <Button href={`mailto:${ORG.email.general}?subject=${encodeURIComponent(subject)}`} size="lg" arrow>
+                    Email us
+                  </Button>
+                  <Button href="/contact" variant="secondary" size="lg">Ask a question first</Button>
+                </div>
+                <p className="mono mt-6">{note ?? "We reply within two to five working days."}</p>
+              </>
+            ) : open ? (
               <>
                 <p className="mono mt-8 mb-3">Choose your country</p>
-                <div className="flex flex-wrap gap-3">
-                  {ORG.applicationForms.map((f) => (
-                    <a
-                      key={f.country}
-                      href={f.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group inline-flex min-h-[44px] items-center gap-3 rounded-pill bg-[var(--color-action-primary)] px-6 py-3 text-body font-medium text-white transition-colors duration-hover ease-entrance hover:bg-[var(--color-action-primary-hover)]"
-                    >
-                      Apply — {f.country}
-                      <ArrowUpRight className="h-[1.05em] w-[1.05em] shrink-0 transition-transform duration-hover ease-entrance group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-                    </a>
-                  ))}
+                <div className="flex flex-wrap items-center gap-3">
+                  <CountryPicker forms={settings.forms} />
                   <Button href="/contact" variant="secondary" size="lg">Ask a question first</Button>
                 </div>
                 <p className="mono mt-4">
                   Applying from elsewhere? Write to {ORG.email.general} and we will route you.
                 </p>
+                <p className="mono mt-6">{note ?? "We reply within two to five working days."}</p>
+              </>
+            ) : (
+              <>
+                <p className="measure mt-8 text-body leading-body text-[var(--color-text-primary)]">
+                  {settings.closedNote ??
+                    "Applications are closed at the moment. Leave your details and we will email you the moment the next intake opens — before we announce it anywhere else."}
+                </p>
+                <WaitlistForm interest={interest} />
+                <p className="mono mt-6">
+                  {note ?? "One email when applications open. Nothing else, and you can unsubscribe."}
+                </p>
               </>
             )}
-
-            <p className="mono mt-6">{note ?? "We reply within two to five working days."}</p>
           </div>
         </Reveal>
       </div>

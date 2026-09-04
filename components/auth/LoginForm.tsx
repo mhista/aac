@@ -14,16 +14,58 @@ import { ORG } from "@/lib/org";
  * when the people signing in are 40+ campus coordinators rather than engineers.
  * Password sign-in is offered as a fallback for accounts that have one set.
  */
+/**
+ * Why a sign-in attempt bounced. Each of these needs a different action from
+ * the person, so none of them may collapse into "link expired".
+ */
+const REASONS: Record<string, string> = {
+  otp_expired:
+    "That link had already been used or has expired. Email scanners often open links before you do, so use the six-digit code instead — it cannot be consumed by a scanner.",
+  exchange_failed:
+    "This browser could not complete the sign-in. That usually means the email was opened in a different browser from the one that asked for it. Request a new link here, then use the six-digit code from the email.",
+  no_code: "That link was incomplete. Please request a new one.",
+  not_configured:
+    "Sign-in is not configured on this server yet — NEXT_PUBLIC_SUPABASE_ANON_KEY is missing.",
+  provider: "The sign-in service refused that link. Please request a new one.",
+  link_expired: "That link is no longer valid. Please request a new one.",
+};
+
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") ?? "/dashboard";
+  const reason = params.get("error");
 
   const [mode, setMode] = useState<"link" | "password">("link");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [verifying, setVerifying] = useState(false);
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(reason ? (REASONS[reason] ?? REASONS.link_expired) : null);
+
+  /**
+   * Verify the six-digit code from the email.
+   *
+   * This path does not use PKCE at all, so it does not depend on a verifier
+   * cookie and cannot be broken by opening the email on another device or by
+   * a scanner having touched the link first.
+   */
+  async function onVerifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    setVerifying(true);
+    setError(null);
+    const db = createClient();
+    const { error } = await db.auth.verifyOtp({
+      email: email.trim(),
+      token: code.trim(),
+      type: "email",
+    });
+    setVerifying(false);
+    if (error) { setError(error.message); return; }
+    router.push(next);
+    router.refresh();
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -66,6 +108,43 @@ export function LoginForm() {
               Open the email we just sent to <strong className="text-[var(--color-text-primary)]">{email}</strong> and
               click the link to sign in. It expires in an hour.
             </p>
+
+            {/* The typed code is the reliable path: a link can be consumed by
+                a mail scanner or opened in the wrong browser, a code cannot. */}
+            <form onSubmit={onVerifyCode} className="mt-6 border-t border-[var(--color-border-subtle)] pt-6">
+              <label htmlFor="otp" className="mono mb-2 block">
+                Or enter the six-digit code from that email
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="otp"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
+                  placeholder="123456"
+                  className="w-full rounded-md border border-[var(--color-border-default)] bg-[var(--color-surface-page)] px-4 py-3 text-body tracking-[0.3em] text-[var(--color-text-primary)] outline-none focus-visible:border-[var(--color-border-brand)]"
+                />
+                <button
+                  type="submit"
+                  disabled={code.length < 6 || verifying}
+                  className="shrink-0 rounded-pill bg-[var(--color-action-primary)] px-6 text-body font-medium text-white transition-colors duration-hover ease-entrance hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
+                >
+                  {verifying ? "Checking…" : "Sign in"}
+                </button>
+              </div>
+              {error && (
+                <p
+                  role="alert"
+                  className="mt-3 rounded-md border border-[var(--color-feedback-danger-base)] bg-[var(--color-feedback-danger-surface)] px-4 py-3 text-caption text-[var(--color-feedback-danger-text)]"
+                >
+                  {error}
+                </p>
+              )}
+            </form>
+
             <p className="mt-4 text-caption text-[var(--color-text-secondary)]">
               Nothing arrived? Check spam, then{" "}
               <button

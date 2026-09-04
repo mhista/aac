@@ -57,6 +57,7 @@ export default function FellowshipPage() {
         title="Applications"
         body="Fellowship intakes are announced through our channels and to existing advocates first. Register your interest and we will tell you when the next cohort opens."
         subject="AAC Leadership Fellowship — register interest"
+        interest="fellowship"
         note="We will contact you when the next intake opens."
       />
     </>

@@ -51,6 +51,13 @@ export interface PostRecord {
   read_minutes: number | null;
   published_at: string | null;
   author: { full_name: string; role_title: string | null; photo: MediaRef | null } | null;
+  /* Only loaded by getPost — the index query does not select it, because
+     shipping every article body to render a list of cards is wasteful. */
+  body?: string | null;
+  tags?: string[] | null;
+  medically_reviewed_by?: string | null;
+  reviewed_at?: string | null;
+  seo?: { title?: string; description?: string } | null;
 }
 
 export interface ProgrammeRecord {
@@ -308,4 +315,136 @@ export async function getImpactMetrics(opts: { headlineOnly?: boolean } = {}): P
   if (rows.length > 0) return rows;
   const seed = ORG.impact.filter((m) => (opts.headlineOnly ? m.is_headline : true));
   return seed as ImpactMetric[];
+}
+
+
+/* ── Site settings ───────────────────────────────────────────────────
+   Feature flags live in the CMS so someone without a developer can open and
+   close applications. Defaults are deliberately CLOSED: if the database is
+   unreachable we must not invite people into a form nobody is reading. */
+
+export interface ApplicationSettings {
+  open: boolean;
+  closedNote: string | null;
+  forms: { country: string; url: string }[];
+}
+
+export async function getApplicationSettings(): Promise<ApplicationSettings> {
+  const rows = await safe<{ feature_flags: any }[]>(
+    async (db) => await db.from("site_settings").select("feature_flags").eq("id", 1).limit(1),
+    [],
+    "site_settings"
+  );
+
+  const flags = rows[0]?.feature_flags ?? {};
+  const cmsForms = Array.isArray(flags.application_forms) ? flags.application_forms : null;
+
+  return {
+    open: flags.applications_open === true,
+    closedNote: typeof flags.applications_closed_note === "string" ? flags.applications_closed_note : null,
+    forms: cmsForms?.length ? cmsForms : [...ORG.applicationForms],
+  };
+}
+
+
+/* ── Page sections ───────────────────────────────────────────────────
+   The homepage is assembled from a registry rather than hard-coded, so a
+   section with nothing to show can be switched off without a deploy. That was
+   the point of the CMS from the start: a page that always renders every
+   section is a page that always has something half-empty on it.
+
+   The fallback matters. If the table is unreachable — no database yet, RLS
+   refusing, a migration mid-run — every section shows. A homepage that
+   silently loses half its content because a query failed is far worse than
+   one that ignores a toggle. */
+
+export interface PageSection {
+  type: string;
+  position: number;
+  is_visible: boolean;
+  config: Record<string, unknown>;
+}
+
+export async function getPageSections(slug: string): Promise<PageSection[] | null> {
+  const rows = await safe<PageSection[]>(
+    async (db) => {
+      const { data: page } = await db.from("pages").select("id").eq("slug", slug).single();
+      if (!page) return { data: null, error: null } as never;
+      return await db
+        .from("page_sections")
+        .select("type,position,is_visible,config")
+        .eq("page_id", page.id)
+        .order("position");
+    },
+    [],
+    "page_sections"
+  );
+  /* null means "no opinion" — render everything. */
+  return rows.length ? rows : null;
+}
+
+
+/* ── Site settings ───────────────────────────────────────────────────
+   The database overrides lib/org.ts; it never replaces it. An empty field
+   means "use the default", so a settings row that is missing, unreachable or
+   half-filled can never blank out the contact address in the footer. */
+
+export interface ResolvedSettings {
+  name: string;
+  abbr: string;
+  tagline: string;
+  registration: { body: string; number: string; country: string };
+  email: { general: string; support: string };
+  social: { name: string; url: string; profile: boolean }[];
+  applicationForms: { country: string; url: string }[];
+  flags: { donations: boolean; newsletter: boolean; chatbot: boolean; applicationsOpen: boolean };
+}
+
+export async function getSiteSettings(): Promise<ResolvedSettings> {
+  const rows = await safe<{ org: any; contact: any; socials: any; feature_flags: any }[]>(
+    async (db) => await db.from("site_settings").select("org,contact,socials,feature_flags").eq("id", 1).limit(1),
+    [],
+    "site_settings"
+  );
+  const r = rows[0];
+  const org = r?.org ?? {};
+  const contact = r?.contact ?? {};
+  const socials = r?.socials ?? {};
+  const flags = r?.feature_flags ?? {};
+
+  /* Socials are stored keyed by platform. Fall back to the coded list, and
+     keep the coded display names so "linkedin" still renders as "LinkedIn". */
+  const coded = ORG.social;
+  const social = Object.keys(socials).length
+    ? coded
+        .map((c) => ({ ...c, url: socials[c.name.toLowerCase()] ?? c.url }))
+        .filter((c) => c.url)
+    : coded;
+
+  const forms = Array.isArray(flags.application_forms) && flags.application_forms.length
+    ? flags.application_forms
+    : [...ORG.applicationForms];
+
+  return {
+    name: org.name || ORG.name,
+    abbr: org.abbr || "AAC",
+    tagline: org.tagline || ORG.tagline,
+    registration: {
+      body: org.registrationBody || ORG.registration.body,
+      number: org.registrationNumber || ORG.registration.number,
+      country: org.country || ORG.registration.country,
+    },
+    email: {
+      general: contact.general || ORG.email.general,
+      support: contact.support || ORG.email.support,
+    },
+    social,
+    applicationForms: forms,
+    flags: {
+      donations: flags.donations === true,
+      newsletter: flags.newsletter !== false,
+      chatbot: flags.chatbot === true,
+      applicationsOpen: flags.applications_open === true,
+    },
+  };
 }

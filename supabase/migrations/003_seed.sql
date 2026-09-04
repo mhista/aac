@@ -90,8 +90,19 @@ insert into site_settings (id, org, contact, socials, feature_flags) values (
     'instagram','https://www.instagram.com/allagainstcancer',
     'tiktok','https://www.tiktok.com/@allagainstcancer'
   ),
-  -- Donations stay off until a payment provider is configured and verified.
-  jsonb_build_object('donations', false, 'chatbot', false, 'newsletter', true)
+  /* Feature flags. Donations stay off until a payment provider is configured
+     and verified. Applications default CLOSED — open them from the dashboard
+     when an intake is actually running, so nobody fills in a form that nobody
+     is reading. `application_forms` lets a new country be added without a
+     deploy; leave it empty to fall back to the ones in lib/org.ts. */
+  jsonb_build_object(
+    'donations', false,
+    'chatbot', false,
+    'newsletter', true,
+    'applications_open', false,
+    'applications_closed_note', null,
+    'application_forms', jsonb_build_array()
+  )
 ) on conflict (id) do nothing;
 
 -- ── FAQs ─────────────────────────────────────────────────────────────

@@ -2,10 +2,12 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Nav } from "@/components/ui/Nav";
 import { Footer } from "@/components/ui/Footer";
+import { ChromeGate } from "@/components/ui/ChromeGate";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
 import { ScrollTop } from "@/components/ui/ScrollTop";
 import { ORG } from "@/lib/org";
 import { JsonLd, organizationLd, websiteLd, SITE } from "@/lib/seo";
+import { getPublicSettings } from "@/lib/cms/public-settings";
 
 
 
@@ -63,7 +65,9 @@ export const viewport: Viewport = {
 };
 
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const settings = await getPublicSettings();
+
   return (
     <html lang="en">
       <head>
@@ -73,15 +77,20 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=Instrument+Sans:wght@400..600&family=JetBrains+Mono:wght@400;500&display=swap"
         />
-        <JsonLd data={[organizationLd(), websiteLd()]} />
+        <JsonLd data={[organizationLd(settings), websiteLd()]} />
       </head>
       <body>
         <a href="#main" className="skip-link">Skip to content</a>
         <SmoothScroll />
-        <Nav />
+        {/* Public chrome only. The dashboard is a tool, not a marketing page. */}
+        <ChromeGate>
+          <Nav />
+        </ChromeGate>
         <main id="main" tabIndex={-1}>{children}</main>
-        <Footer />
-        <ScrollTop />
+        <ChromeGate>
+          <Footer />
+          <ScrollTop />
+        </ChromeGate>
       </body>
     </html>
   );

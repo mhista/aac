@@ -6,6 +6,7 @@ import { Empty } from "@/components/ui/Empty";
 import { ArrowLeft, ArrowRight } from "@/components/ui/Icon";
 import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { getTeam } from "@/lib/cms";
+import { Avatar } from "@/components/media/Avatar";
 import { ORG } from "@/lib/org";
 
 export const revalidate = 3600;
@@ -84,9 +85,7 @@ export default async function DepartmentPage({ params }: { params: Promise<{ slu
           {director ? (
             <Reveal>
               <div className="grid items-center gap-10 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] p-7 md:grid-cols-[280px_1fr] md:p-10">
-                {director.photo?.url && (
-                  <Img src={director.photo.url} alt={director.photo.alt} ratio="1/1" sizes="280px" className="rounded-lg" />
-                )}
+                <Avatar name={director.full_name} photo={director.photo} className="rounded-lg" sizes="280px" />
                 <div>
                   <p className="mono mb-3">Director</p>
                   <h2 className="font-display text-[1.75rem] leading-heading text-[var(--color-text-display)]">

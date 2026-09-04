@@ -8,6 +8,14 @@ Three migrations, run in order, in the Supabase SQL editor
 | 1 | `migrations/001_schema.sql` | Tables, enums, indexes, triggers |
 | 2 | `migrations/002_rls.sql` | Row Level Security + the publish RPC |
 | 3 | `migrations/003_seed.sql` | Real seed data — departments, regions, categories, impact figures, FAQs, homepage sections |
+| 4 | `migrations/004_waitlist.sql` | Application waitlist — consent, unsubscribe tokens, RLS, and the `applications_open` flag backfill |
+| 5 | `migrations/005_team.sql` | Board, directors and country director — real people, September 2026 |
+| 6 | `migrations/006_invitations.sql` | Self-applying invitations, plus `set_user_role` / `set_user_status` with anti-escalation and anti-lockout guards |
+| 7 | `migrations/007_event_delete.sql` | Event deletion — coordinators may remove published events, authors only their own unpublished ones |
+| 8 | `migrations/008_post_delete.sql` | Same delete rule for posts, programmes, resources and pages, plus a published-posts index |
+| 9 | `migrations/009_capabilities.sql` | **Security fix** — governance tables were writable by any coordinator. Splits editing rights by role, enforces one campus coordinator per chapter, clears stale scope on promotion |
+| 10 | `migrations/010_zones.sql` | **Run alone.** Adds the `zonal_coordinator` enum value — Postgres cannot use a new enum value in the transaction that created it |
+| 11 | `migrations/011_zones.sql` | Zones table, rank 55, `set_user_role` gaining a zone argument. Run only after 010 has finished |
 
 Run 001 first and let it finish before 002. They're written to be safely
 re-runnable, so a partial run can be repeated.
@@ -86,3 +94,5 @@ every publish is attributable.
   exact. A null value renders the "measurement in progress" state.
 - Donations ship behind a feature flag (`site_settings.feature_flags`),
   off until a payment provider is configured and verified.
+
+`TEST-DATA.sql` is not a migration. It adds three sample articles and three events for checking the public pages, all prefixed `[TEST]`, with a cleanup block at the bottom.

@@ -7,6 +7,7 @@ import { getPost, getPosts } from "@/lib/cms";
 import { MEDICAL_NOTICE } from "@/lib/org";
 import { pageMetadata, JsonLd, articleLd, breadcrumbLd } from "@/lib/seo";
 import { ArrowLeft, ArrowRight } from "@/components/ui/Icon";
+import { Markdown } from "@/lib/markdown";
 
 export const revalidate = 3600;
 
@@ -82,7 +83,13 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
         <div className="wrap py-16 md:py-20">
           <div className="mx-auto max-w-[68ch] text-body leading-body">
-            <p className="text-[var(--color-text-secondary)]">The full article will appear here once it is published from the CMS.</p>
+            {post.body ? (
+              <Markdown>{post.body}</Markdown>
+            ) : (
+              <p className="text-[var(--color-text-secondary)]">
+                This article has no body yet.
+              </p>
+            )}
           </div>
           <aside className="mx-auto mt-14 max-w-[68ch] rounded-md border border-[var(--color-border-default)] bg-[var(--color-surface-sunken)] p-6">
             <p className="mono mb-2">Important</p>

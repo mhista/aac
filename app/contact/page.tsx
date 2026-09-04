@@ -3,6 +3,8 @@ import { PageHero } from "@/components/ui/PageHero";
 import { Reveal } from "@/components/motion/Reveal";
 import { SocialIcon } from "@/components/ui/SocialIcon";
 import { ORG } from "@/lib/org";
+import { getPublicSettings } from "@/lib/cms/public-settings";
+import { ContactForm } from "@/components/ui/ContactForm";
 
 export const metadata = pageMetadata({
   title: 'Contact',
@@ -10,14 +12,17 @@ export const metadata = pageMetadata({
   path: '/contact',
 });
 
-const ROUTES = [
-  { title: "General enquiries", body: "Questions about our work, chapters, volunteering or anything else.", email: ORG.email.general },
-  { title: "Patient & survivor support", body: "If you or someone you love is facing cancer and needs help finding support.", email: ORG.email.support },
-  { title: "Partnerships", body: "Hospitals, pharmacies, universities, research bodies, companies and funders.", email: ORG.email.general },
-  { title: "Media", body: "Interviews, press enquiries and requests for our logo or materials.", email: ORG.email.general },
+const routes = (general: string, support: string) => [
+  { title: "General enquiries", body: "Questions about our work, chapters, volunteering or anything else.", email: general },
+  { title: "Patient & survivor support", body: "If you or someone you love is facing cancer and needs help finding support.", email: support },
+  { title: "Partnerships", body: "Hospitals, pharmacies, universities, research bodies, companies and funders.", email: general },
+  { title: "Media", body: "Interviews, press enquiries and requests for our logo or materials.", email: general },
 ];
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const S = await getPublicSettings();
+  const ROUTES = routes(S.email.general, S.email.support);
+
   return (
     <>
       <PageHero
@@ -29,6 +34,13 @@ export default function ContactPage() {
       <section className="section">
         <div className="wrap grid gap-14 lg:grid-cols-[1.2fr_1fr] lg:gap-20">
           <div>
+            <Reveal>
+              <ContactForm />
+            </Reveal>
+
+            {/* The addresses stay. Some people would rather write from their
+                own mail client, and removing that would be a downgrade. */}
+            <p className="mono mb-3 mt-12">Or email the right person directly</p>
             <ul className="divide-y divide-[var(--color-border-default)] border-y border-[var(--color-border-default)]">
               {ROUTES.map((r, i) => (
                 <Reveal key={r.title} delay={i * 0.06}>
