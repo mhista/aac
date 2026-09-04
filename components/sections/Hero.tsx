@@ -1,7 +1,22 @@
-import { HeroMedia } from "@/components/media/Img";
 import { Button } from "@/components/ui/Button";
+import { ik, localImage } from "@/lib/media/imagekit";
 import { ORG } from "@/lib/org";
 
+/**
+ * Hero. Rebuilt from scratch — three flat layers, no tricks.
+ *
+ *   1. media   — background-image, cover. Not an <img>: object-fit:cover was
+ *                letterboxing with bands down both sides even though its box
+ *                measured full width. background-size:cover has never done that.
+ *   2. scrim   — one vertical gradient. Nothing horizontal, so no edge can ever
+ *                read as a margin.
+ *   3. content — normal flow, inside .wrap.
+ *
+ * The section is a plain block element, so it is the full width of <main> with
+ * no breakout hacks needed.
+ *
+ * Accepts an image OR a muted autoplay video, chosen in the CMS.
+ */
 export function Hero({
   eyebrow,
   headline,
@@ -15,62 +30,76 @@ export function Hero({
   image?: string;
   videoUrl?: string | null;
 }) {
+  const asset = localImage(image);
+  const src = ik(asset?.path ?? image, { w: 2560 });
+
   return (
-    /* Full-bleed breakout.
-       Rather than trusting that no ancestor constrains the width, this forces
-       the hero to span the viewport regardless: 100vw wide, pulled back by
-       half the difference between its container and the viewport. If nothing
-       is constraining it, the calc resolves to 0 and this is a no-op. Paired
-       with overflow-x:clip on body so the scrollbar cannot cause overflow. */
-    <section
-      className="relative isolate flex min-h-[86svh] items-end overflow-hidden md:min-h-[92svh]"
-      style={{ width: "100vw", marginLeft: "calc(50% - 50vw)", maxWidth: "none" }}
-    >
-      {/* Layer 1 — media, furthest back */}
-      <HeroMedia image={image} videoUrl={videoUrl} alt="" className="z-0" />
+    <>
+      {/* A background-image is invisible to the preload scanner, so LCP needs this. */}
+      {!videoUrl && <link rel="preload" as="image" href={src} fetchPriority="high" />}
 
-      {/* Layer 2 — scrim, ABOVE the media.
-
-          Vertical only. A horizontal (100deg) gradient runs its first stops
-          across ~340px of a 1425px-wide hero, which paints a flat slab down
-          the left edge — indistinguishable from a margin, and the reason this
-          looked like the image was clipped. Because a bottom-up gradient is
-          uniform across the width, no edge can read as a border.
-
-          The content is bottom-anchored (items-end), so bottom-up is also
-          where the legibility is actually needed. */}
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 z-[1]"
-        style={{
-          background:
-            "linear-gradient(to top, rgba(30,11,69,.80) 0%, rgba(30,11,69,.62) 26%, rgba(30,11,69,.34) 48%, rgba(30,11,69,.12) 68%, rgba(30,11,69,0) 86%)",
-        }}
-      />
-
-      {/* Layer 3 — content */}
-      <div className="wrap relative z-[2] w-full pb-16 pt-32 md:pb-24 md:pt-40">
-        {eyebrow && (
-          <p className="mono mb-6 !text-[var(--color-violet-200)]">{eyebrow}</p>
+      <section className="relative isolate flex min-h-[88svh] items-end overflow-hidden md:min-h-[94svh]">
+        {/* 1 · Media */}
+        {videoUrl ? (
+          <video
+            className="absolute inset-0 -z-20 h-full w-full object-cover"
+            poster={src}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="metadata"
+            aria-label={asset?.alt ?? ""}
+          >
+            <source src={videoUrl} type="video/mp4" />
+          </video>
+        ) : (
+          <div
+            className="absolute inset-0 -z-20"
+            role="img"
+            aria-label={asset?.alt ?? ""}
+            style={{
+              backgroundColor: "var(--color-violet-950)",
+              backgroundImage: asset?.lqip ? `url("${src}"), url("${asset.lqip}")` : `url("${src}")`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+              backgroundRepeat: "no-repeat",
+            }}
+          />
         )}
 
-        <h1 className="max-w-[20ch] font-display text-[clamp(2.75rem,1.54rem+4.95vw,6rem)] leading-[.95] tracking-tighter text-white [text-shadow:0_2px_24px_rgba(30,11,69,.45)]">
-          {headline}
-        </h1>
+        {/* 2 · Scrim — vertical only. Reaches high enough to carry the headline. */}
+        <div
+          aria-hidden="true"
+          className="absolute inset-0 -z-10"
+          style={{
+            background:
+              "linear-gradient(to top, rgba(23,11,48,.88) 0%, rgba(23,11,48,.78) 22%, rgba(23,11,48,.58) 44%, rgba(23,11,48,.28) 66%, rgba(23,11,48,0) 88%)",
+          }}
+        />
 
-        <p className="mt-7 max-w-[46ch] text-body-l leading-lede text-[var(--color-violet-100)] [text-shadow:0_1px_12px_rgba(30,11,69,.5)]">
-          {lede}
-        </p>
+        {/* 3 · Content */}
+        <div className="wrap relative w-full pb-16 pt-32 md:pb-24 md:pt-40">
+          {eyebrow && (
+            <p className="mono mb-6 !text-white/80">{eyebrow}</p>
+          )}
 
-        <div className="mt-9 flex flex-wrap gap-3">
-          <Button href="/get-involved" size="lg" arrow>Join the movement</Button>
-          <Button href="/donate" variant="on-inverse" size="lg" arrow>Donate</Button>
+          <h1 className="max-w-[19ch] font-display text-[clamp(2.75rem,1.54rem+4.95vw,6rem)] leading-[.95] tracking-tighter text-white">
+            {headline}
+          </h1>
+
+          <p className="mt-7 max-w-[46ch] text-body-l leading-lede text-white/90">
+            {lede}
+          </p>
+
+          <div className="mt-9 flex flex-wrap gap-3">
+            <Button href="/get-involved" size="lg" arrow>Join the movement</Button>
+            <Button href="/donate" variant="on-inverse" size="lg" arrow>Donate</Button>
+          </div>
+
+          <p className="mono mt-10 !text-white/70">{ORG.countries.join(" · ")}</p>
         </div>
-
-        <p className="mono mt-10 !text-[var(--color-violet-200)]">
-          {ORG.countries.join(" · ")}
-        </p>
-      </div>
-    </section>
+      </section>
+    </>
   );
 }

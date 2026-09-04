@@ -99,7 +99,19 @@ export function HeroMedia({
 
   if (videoUrl) {
     return (
-      <div className={`absolute inset-0 ${className}`}>
+      <div
+        className={className}
+        style={{
+        position: "absolute",
+        top: 0,
+        bottom: 0,
+        left: "50%",
+        width: "100vw",
+        maxWidth: "none",
+        transform: "translateX(-50%)",
+        overflow: "hidden",
+        }}
+      >
         <video
           className="h-full w-full object-cover"
           poster={poster}
@@ -116,44 +128,40 @@ export function HeroMedia({
     );
   }
 
-  /* No aspect-ratio box here — the hero fills whatever height the section is.
-     Using <Img> would impose a 16/9 box that letterboxes the image inside the
-     container instead of covering it. */
+  /* Rendered as a background-image, not an <img>.
+
+     Why: with an identical full-width box, `object-fit: fill` painted edge to
+     edge while `object-fit: cover` left ~142px bands on each side. The box was
+     never the problem — object-fit was. `background-size: cover` is a separate
+     code path that has behaved correctly here throughout (the LQIP has always
+     filled), and it cannot letterbox.
+
+     The image is decorative (alt=""), so nothing is lost semantically. LCP is
+     preserved with a preload link in Hero.tsx, since a background-image is not
+     discoverable by the preload scanner. */
   const local2 = localImage(image);
+  const url = ik(local2?.path ?? image, { w: 2560 });
+
   return (
     <div
       className={className}
+      role="img"
+      aria-label={alt ?? local2?.alt ?? ""}
       style={{
         position: "absolute",
-        inset: 0,
+        top: 0,
+        bottom: 0,
+        left: "50%",
+        width: "100vw",
+        maxWidth: "none",
+        transform: "translateX(-50%)",
         overflow: "hidden",
-        ...(local2?.lqip
-          ? { backgroundImage: `url("${local2.lqip}")`, backgroundSize: "cover", backgroundPosition: "center" }
-          : {}),
+        backgroundColor: "var(--color-violet-100)",
+        backgroundImage: local2?.lqip ? `url("${url}"), url("${local2.lqip}")` : `url("${url}")`,
+        backgroundSize: "cover, cover",
+        backgroundPosition: "center, center",
+        backgroundRepeat: "no-repeat, no-repeat",
       }}
-    >
-      <img
-        src={ik(local2?.path ?? image, { w: 2560 })}
-        srcSet={srcSet(local2?.path ?? image)}
-        sizes="100vw"
-        alt={alt ?? local2?.alt ?? ""}
-        loading="eager"
-        fetchPriority="high"
-        decoding="sync"
-        /* Inline, not utilities. The base layer sets img{height:auto;max-width:100%},
-           and any of that leaking through leaves the hero letterboxed with bands
-           down the sides. Inline styles remove the cascade from the equation. */
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          maxWidth: "none",
-          objectFit: "cover",
-          objectPosition: "center",
-          display: "block",
-        }}
-      />
-    </div>
+    />
   );
 }
