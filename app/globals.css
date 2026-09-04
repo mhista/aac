@@ -1,0 +1,171 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Design tokens · generated from tokens/aac.tokens.json ─────────────
+   Primitives first, then semantic aliases. Product code uses the semantic tier. */
+:root{
+  --color-violet-50: #F7F3FE;
+  --color-violet-100: #EFE8FD;
+  --color-violet-200: #DCCFFA;
+  --color-violet-300: #B79BF2;
+  --color-violet-400: #9463EA;
+  --color-violet-500: #7C4DE0;
+  --color-violet-600: #6C3CC0;
+  --color-violet-700: #4E23A0;
+  --color-violet-800: #3B1A78;
+  --color-violet-900: #2A0F5B;
+  --color-violet-950: #1E0B45;
+  --color-neutral-paper: #FAF8F4;
+  --color-neutral-paper-alt: #F3F0EA;
+  --color-neutral-surface: #FFFFFF;
+  --color-neutral-ink: #171320;
+  --color-neutral-ink-muted: #5A5468;
+  --color-neutral-line: #E4E0DA;
+  --color-white: #FFFFFF;
+  --color-signal-sun-base: #F2A03D;
+  --color-signal-sun-ink: #91602A;
+  --color-signal-sun-tint: #F9EDDE;
+  --color-signal-coral-base: #E2543C;
+  --color-signal-coral-ink: #B14232;
+  --color-signal-coral-tint: #F7E4DE;
+  --color-signal-leaf-base: #3FA85F;
+  --color-signal-leaf-ink: #2F7647;
+  --color-signal-leaf-tint: #E4EEE2;
+  --color-signal-ocean-base: #1E7FC2;
+  --color-signal-ocean-ink: #1B6BA4;
+  --color-signal-ocean-tint: #E0E9EE;
+  --color-signal-plum-base: #7C4DE0;
+  --color-signal-plum-ink: #7448D1;
+  --color-signal-plum-tint: #EBE3F2;
+  --color-semantic-success-base: #2E8B57;
+  --color-semantic-success-ink: #28754B;
+  --color-semantic-success-tint: #E2EBE1;
+  --color-semantic-warning-base: #D98A16;
+  --color-semantic-warning-ink: #935D14;
+  --color-semantic-warning-tint: #F6EBD9;
+  --color-semantic-danger-base: #C63A2E;
+  --color-semantic-danger-ink: #B7362C;
+  --color-semantic-danger-tint: #F4E1DC;
+  --color-semantic-info-base: #1E7FC2;
+  --color-semantic-info-ink: #1B6BA4;
+  --color-semantic-info-tint: #E0E9EE;
+
+  --color-surface-page: var(--color-neutral-paper);
+  --color-surface-page-alt: var(--color-neutral-paper-alt);
+  --color-surface-raised: var(--color-neutral-surface);
+  --color-surface-sunken: var(--color-violet-50);
+  --color-surface-wash: var(--color-violet-100);
+  --color-surface-inverse: var(--color-violet-950);
+  --color-surface-inverse-alt: var(--color-violet-900);
+  --color-surface-brand: var(--color-violet-600);
+  --color-surface-brand-subtle: var(--color-violet-100);
+  --color-surface-disabled: var(--color-neutral-paper-alt);
+  --color-text-primary: var(--color-neutral-ink);
+  --color-text-secondary: var(--color-neutral-ink-muted);
+  --color-text-display: var(--color-violet-900);
+  --color-text-display-alt: var(--color-violet-800);
+  --color-text-emphasis: var(--color-violet-700);
+  --color-text-on-brand: var(--color-white);
+  --color-text-on-inverse: var(--color-white);
+  --color-text-on-inverse-muted: var(--color-violet-200);
+  --color-text-disabled: var(--color-neutral-ink-muted);
+  --color-action-primary: var(--color-violet-600);
+  --color-action-primary-hover: var(--color-violet-500);
+  --color-action-primary-active: var(--color-violet-700);
+  --color-action-primary-text: var(--color-white);
+  --color-action-secondary-border: var(--color-violet-600);
+  --color-action-secondary-text: var(--color-violet-700);
+  --color-action-secondary-hover-surface: var(--color-violet-100);
+  --color-action-ghost-text: var(--color-neutral-ink);
+  --color-action-ghost-hover-surface: var(--color-neutral-paper-alt);
+  --color-action-on-inverse: var(--color-white);
+  --color-action-on-inverse-text: var(--color-violet-900);
+  --color-border-default: var(--color-neutral-line);
+  --color-border-subtle: var(--color-violet-100);
+  --color-border-strong: var(--color-neutral-ink-muted);
+  --color-border-brand: var(--color-violet-600);
+  --color-border-inverse: var(--color-violet-800);
+  --color-focus-ring: var(--color-violet-400);
+  --color-focus-ring-inverse: var(--color-violet-200);
+  --color-category-awareness-base: var(--color-signal-sun-base);
+  --color-category-awareness-text: var(--color-signal-sun-ink);
+  --color-category-awareness-surface: var(--color-signal-sun-tint);
+  --color-category-support-base: var(--color-signal-coral-base);
+  --color-category-support-text: var(--color-signal-coral-ink);
+  --color-category-support-surface: var(--color-signal-coral-tint);
+  --color-category-prevention-base: var(--color-signal-leaf-base);
+  --color-category-prevention-text: var(--color-signal-leaf-ink);
+  --color-category-prevention-surface: var(--color-signal-leaf-tint);
+  --color-category-research-base: var(--color-signal-ocean-base);
+  --color-category-research-text: var(--color-signal-ocean-ink);
+  --color-category-research-surface: var(--color-signal-ocean-tint);
+  --color-category-innovation-base: var(--color-signal-plum-base);
+  --color-category-innovation-text: var(--color-signal-plum-ink);
+  --color-category-innovation-surface: var(--color-signal-plum-tint);
+  --color-feedback-success-base: var(--color-semantic-success-base);
+  --color-feedback-success-text: var(--color-semantic-success-ink);
+  --color-feedback-success-surface: var(--color-semantic-success-tint);
+  --color-feedback-warning-base: var(--color-semantic-warning-base);
+  --color-feedback-warning-text: var(--color-semantic-warning-ink);
+  --color-feedback-warning-surface: var(--color-semantic-warning-tint);
+  --color-feedback-danger-base: var(--color-semantic-danger-base);
+  --color-feedback-danger-text: var(--color-semantic-danger-ink);
+  --color-feedback-danger-surface: var(--color-semantic-danger-tint);
+  --color-feedback-info-base: var(--color-semantic-info-base);
+  --color-feedback-info-text: var(--color-semantic-info-ink);
+  --color-feedback-info-surface: var(--color-semantic-info-tint);
+  --color-overlay-scrim: rgba(30,11,69,0.45);
+  --color-overlay-scrim-strong: rgba(30,11,69,0.72);
+  --color-overlay-gradient-brand: linear-gradient(104deg, #4E23A0 0%, #7C4DE0 100%);
+}
+
+:root{
+  --font-display:'Instrument Serif',Newsreader,'Iowan Old Style',Georgia,serif;
+  --font-body:'Satoshi','General Sans',Inter,system-ui,sans-serif;
+  --font-mono:'JetBrains Mono','Geist Mono',ui-monospace,SFMono-Regular,monospace;
+  --ease-entrance:cubic-bezier(.16,1,.3,1);
+  --ease-layout:cubic-bezier(.77,0,.175,1);
+  --section-y:clamp(72px,10vw,160px);
+  --page-x:clamp(20px,5vw,80px);
+  --wrap:1280px;
+}
+
+@layer base{
+  *,*::before,*::after{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:var(--color-surface-page);
+    color:var(--color-text-primary);
+    font-family:var(--font-body);
+    font-size:clamp(1rem,.9768rem + .0952vw,1.0625rem);
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+  }
+  h1,h2,h3,h4{margin:0;font-weight:400}
+  p{margin:0}
+  img,video{max-width:100%;height:auto;display:block}
+  a{color:inherit;text-decoration:none}
+  button{font:inherit;color:inherit}
+  :focus-visible{outline:2px solid var(--color-focus-ring);outline-offset:2px;border-radius:4px}
+  ::selection{background:var(--color-violet-200);color:var(--color-violet-950)}
+}
+
+@layer components{
+  .wrap{width:100%;max-width:var(--wrap);margin-inline:auto;padding-inline:var(--page-x)}
+  .section{padding-block:var(--section-y)}
+  .display{font-family:var(--font-display);color:var(--color-text-display);letter-spacing:-.02em;line-height:1.1}
+  .mono{font-family:var(--font-mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-secondary)}
+  .measure{max-width:66ch}
+  .skip-link{position:absolute;left:-9999px;top:0;z-index:100;padding:12px 20px;background:var(--color-violet-600);color:#fff;border-radius:0 0 8px 0}
+  .skip-link:focus{left:0}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms!important;animation-iteration-count:1!important;
+    transition-duration:.01ms!important;scroll-behavior:auto!important;
+  }
+}
