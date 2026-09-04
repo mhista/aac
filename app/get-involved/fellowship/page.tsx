@@ -5,7 +5,7 @@ import { ApplyPanel } from "@/components/ui/ApplyPanel";
 import { Reveal } from "@/components/motion/Reveal";
 
 export const metadata = pageMetadata({
-  title: 'AAC Fellowship',
+  title: 'AAC Leadership Fellowship',
   description: 'A leadership and capacity-building programme equipping young Africans to become cancer advocates, researchers and changemakers.',
   path: '/get-involved/fellowship',
 });
@@ -14,8 +14,8 @@ export default function FellowshipPage() {
   return (
     <>
       <PageHero
-        eyebrow="Get involved · Fellowship"
-        title="The AAC Fellowship."
+        eyebrow="Get involved · Leadership Fellowship"
+        title="The AAC Leadership Fellowship."
         lede="A leadership and capacity-building programme for young Africans who want to lead cancer work in their own regions — with training, mentorship and a real project to run."
       />
 
@@ -56,7 +56,7 @@ export default function FellowshipPage() {
       <ApplyPanel
         title="Applications"
         body="Fellowship intakes are announced through our channels and to existing advocates first. Register your interest and we will tell you when the next cohort opens."
-        subject="AAC Fellowship — register interest"
+        subject="AAC Leadership Fellowship — register interest"
         note="We will contact you when the next intake opens."
       />
     </>

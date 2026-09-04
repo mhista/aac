@@ -6,6 +6,8 @@ import { Empty } from "@/components/ui/Empty";
 import { Values } from "@/components/sections/Values";
 import { CtaBand } from "@/components/sections/CtaBand";
 import { getTeam } from "@/lib/cms";
+import Link from "next/link";
+import { ArrowRight } from "@/components/ui/Icon";
 import { ORG } from "@/lib/org";
 
 export const metadata = pageMetadata({
@@ -57,6 +59,45 @@ export default async function AboutPage() {
               </Reveal>
             ))}
           </dl>
+        </div>
+      </section>
+
+      {/* Explore departments */}
+      <section className="section">
+        <div className="wrap">
+          <Reveal>
+            <div className="flex flex-wrap items-end justify-between gap-6">
+              <div>
+                <p className="mono mb-4">Departments</p>
+                <h2 className="display max-w-[16ch] text-[clamp(1.75rem,1.3rem+1.9vw,2.75rem)]">
+                  Four departments, four directors
+                </h2>
+              </div>
+              <Link href="/departments" className="group inline-flex items-center gap-2 text-body text-[var(--color-text-emphasis)]">
+                Explore departments
+                <ArrowRight className="h-4 w-4 shrink-0 transition-transform duration-hover ease-entrance group-hover:translate-x-1" />
+              </Link>
+            </div>
+          </Reveal>
+          <ul className="mt-10 divide-y divide-[var(--color-border-default)] border-y border-[var(--color-border-default)]">
+            {ORG.departments.map((d, i) => (
+              <Reveal key={d.slug} delay={i * 0.05}>
+                <li>
+                  <Link href={`/departments/${d.slug}`} className="group grid items-baseline gap-3 py-6 md:grid-cols-[auto_1fr_auto] md:gap-10">
+                    <span className="mono">{d.number}</span>
+                    <span>
+                      <span className="block font-display text-[1.5rem] leading-heading text-[var(--color-text-display)]">{d.name}</span>
+                      <span className="mt-1.5 block max-w-[62ch] text-caption leading-body text-[var(--color-text-secondary)]">{d.summary}</span>
+                      <span className="mt-3 inline-flex items-center gap-2 rounded-pill border border-[var(--color-action-secondary-border)] px-4 py-2 text-caption font-medium text-[var(--color-action-secondary-text)] md:hidden">
+                        Explore <ArrowRight className="h-3.5 w-3.5" />
+                      </span>
+                    </span>
+                    <ArrowRight className="hidden h-5 w-5 text-[var(--color-text-emphasis)] transition-transform duration-hover ease-entrance group-hover:translate-x-2 md:block" />
+                  </Link>
+                </li>
+              </Reveal>
+            ))}
+          </ul>
         </div>
       </section>
 

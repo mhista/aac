@@ -11,7 +11,7 @@ export function Footer() {
           <div className="max-w-[42ch]">
             <Link href="/" className="mb-5 inline-flex items-center gap-3" aria-label={`${ORG.name} — home`}>
               <img src="/aac-icon-96.png" alt="" width={48} height={48} className="h-12 w-12" />
-              <span className="font-display text-[1.4rem] leading-tight">All Against Cancer</span>
+              <span className="font-display text-[1.4rem] leading-tight">All Against Cancer <span className="text-[0.72em] opacity-75">Initiative</span></span>
             </Link>
             <p className="text-caption text-[var(--color-text-on-inverse-muted)]">{ORG.tagline}</p>
             <p className="mt-5 text-body text-[var(--color-violet-200)]">{ORG.rallyingLine}</p>

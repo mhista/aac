@@ -61,7 +61,7 @@ export function Nav() {
               className={clsx("transition-all duration-standard ease-entrance", scrolled ? "h-8 w-8" : "h-9 w-9")}
             />
             <span className="font-display text-[1.05rem] leading-none text-[var(--color-text-display)] md:text-[1.15rem]">
-              All Against Cancer
+              All Against Cancer <span className="text-[0.72em] opacity-70">Initiative</span>
             </span>
           </Link>
 
@@ -145,7 +145,7 @@ export function Nav() {
           <div className="flex items-center justify-between px-5 py-5">
             <Link href="/" onClick={() => setOpen(false)} className="flex items-center gap-2.5">
               <img src="/aac-icon-96.png" alt="" width={36} height={36} className="h-9 w-9" />
-              <span className="font-display text-[1.1rem] text-[var(--color-text-display)]">All Against Cancer</span>
+              <span className="font-display text-[1.1rem] text-[var(--color-text-display)]">All Against Cancer <span className="text-[0.72em] opacity-70">Initiative</span></span>
             </Link>
             <button
               type="button"

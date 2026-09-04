@@ -11,7 +11,7 @@
 
 export const ORG = {
   name: "All Against Cancer Initiative",
-  shortName: "All Against Cancer",
+  shortName: "All Against Cancer Initiative",
   abbr: "AAC",
   tagline: "Bringing Hope through Awareness, Support and Research",
   rallyingLine: "One continent. One movement. A shared responsibility.",
@@ -26,20 +26,52 @@ export const ORG = {
     general: "contact@aaci.ngo",
     support: "support@aaci.ngo",
   },
+  /* `profile: true` marks an official account page — only those go into
+     schema.org `sameAs`, because pointing that at a single post is invalid and
+     search engines discard it.
+
+     Facebook is still a /share/ link rather than a clean page URL. It resolves,
+     but the canonical facebook.com/<pagename> form is better for `sameAs`. */
   social: [
-    { name: "LinkedIn", url: "https://www.linkedin.com/company/all-against-cancer" },
-    { name: "Facebook", url: "https://www.facebook.com/allagainstcancer" },
-    { name: "X", url: "https://x.com/allagainstcancr" },
-    { name: "Instagram", url: "https://www.instagram.com/allagainstcancer" },
-    { name: "TikTok", url: "https://www.tiktok.com/@allagainstcancer" },
-  ],
+    { name: "LinkedIn",  url: "https://www.linkedin.com/company/africa-against-cancer/", profile: true },
+    { name: "Instagram", url: "https://www.instagram.com/all__against_cancer", profile: true },
+    { name: "X",         url: "https://x.com/AAC_Initiative", profile: true },
+    { name: "TikTok",    url: "https://www.tiktok.com/@all.against.cancer", profile: true },
+    { name: "Facebook",  url: "https://www.facebook.com/share/18SgeRjxts/", profile: true },
+  ] as { name: string; url: string; profile: boolean }[],
   countries: ["Nigeria", "Ghana", "Kenya"],
 
-  /* Applications and volunteer sign-up currently go to an external form.
-     This is the single place to change it — when the CMS ships and we have our
-     own multi-step application flow, point this at the internal route and every
-     Apply button across the site follows. */
-  applicationFormUrl: "https://tinyurl.com/4uru9y5k",
+  /* Applications route to a country-specific form. The old single link opened
+     a sheet that just listed these two, which made people pick twice — so the
+     choice happens here instead, in the UI, where it is one tap.
+
+     When the CMS ships and we have our own multi-step application flow, replace
+     these with internal routes and every Apply control on the site follows. */
+  applicationForms: [
+    {
+      country: "Nigeria",
+      url: "https://docs.google.com/forms/d/e/1FAIpQLSfc5-ZXby9Cb54hr83Uh2HDldQVtXyK-mCYqRQRcP1q7lntAQ/viewform",
+    },
+    {
+      country: "Ghana",
+      url: "https://docs.google.com/forms/d/e/1FAIpQLSfIMN6LwtdvX59FCfv0Ua8pMAYMTZDsoqOwT4Tpnfm_PFPNsQ/viewform",
+    },
+  ] as { country: string; url: string }[],
+
+  /* Downloadable handbook. */
+  handbook: {
+    title: "AAC Volunteer Handbook",
+    subtitle: "Learn · Serve · Lead · Impact",
+    description:
+      "A practical guide to community service, cancer advocacy, skills contribution and recognition, built around the six-month volunteer cycle.",
+    href: "/downloads/AAC-Volunteer-Handbook-v2.pdf",
+    sizeLabel: "PDF · 426 KB",
+    /* The supplied PDF is titled "Africa Against Cancer" throughout — the
+       legacy name we do not reproduce anywhere. The download stays hidden
+       until the handbook is re-exported with "All Against Cancer Initiative".
+       Flip this to true once the corrected PDF replaces the file. */
+    ready: false,
+  },
 
   mission:
     "To reduce the burden of cancer in Africa by empowering communities, strengthening cancer advocacy, supporting patients and survivors, advancing research, improving access to prevention and care, and using education, partnerships and innovation to create practical solutions to cancer challenges.",
@@ -92,11 +124,89 @@ export const ORG = {
     },
     {
       slug: "chapters-fellowship",
-      title: "Chapters & Fellowship",
+      title: "Chapters & Leadership Fellowship",
       description:
-        "Our campus chapters and the AAC Fellowship turn students into cancer advocates who educate their peers and lead change in their own communities.",
+        "Our campus chapters and the AAC Leadership Fellowship turns students into cancer advocates who educate their peers and lead change in their own communities.",
       category: "prevention",
       image: "youth-students-walking",
+    },
+  ],
+
+  /* ── Departments ──────────────────────────────────────────────────────
+     Four departments, distinct from the six pillars: pillars are what AAC
+     works on, departments are how it is organised and who leads each area.
+
+     Director name, photo and welcome note come from the CMS (team_members,
+     tier = 'director'). Until then each department page renders its own
+     honest empty state rather than a placeholder face. */
+  departments: [
+    {
+      slug: "awareness-advocacy-campaign",
+      number: "01",
+      name: "Awareness, Advocacy & Campaign",
+      short: "Awareness & Advocacy",
+      category: "awareness",
+      image: "awareness-community-session",
+      summary:
+        "Takes cancer information into communities, schools, universities and digital spaces — and turns attention into action.",
+      activities: [
+        "National and campus-wide online awareness campaigns",
+        "Cancer education sessions in secondary schools",
+        "Community outreach through churches, mosques and local groups",
+        "Campaign documentation — reach, engagement and participation",
+        "Countering cancer misinformation in public and online",
+      ],
+    },
+    {
+      slug: "patient-survivor-support",
+      number: "02",
+      name: "Patient & Survivor Support",
+      short: "Patient Support",
+      category: "support",
+      image: "screening-clinic",
+      summary:
+        "Makes sure people are not forgotten after a diagnosis — connecting patients, survivors and caregivers to real support.",
+      activities: [
+        "Connecting patients and families to available support and services",
+        "Survivor networks and peer encouragement",
+        "Support for caregivers, who are often overlooked",
+        "Signposting to treatment centres, counselling and financial aid",
+        "Listening to patients so our advocacy reflects what they actually face",
+      ],
+    },
+    {
+      slug: "medication-access-partnerships",
+      number: "03",
+      name: "Medication Access & Global Partnership",
+      short: "Medication Access",
+      category: "support",
+      image: "medication-pharmacy",
+      summary:
+        "Works on the hardest problem we face: the cost and availability of cancer medicines and services.",
+      activities: [
+        "Partnerships with hospitals, pharmacies and cancer centres",
+        "Engagement with pharmaceutical and biotechnology organisations",
+        "Exploring practical routes to affordable cancer medicines",
+        "Working with donors and international bodies on access",
+        "Mapping where treatment is available and where it is not",
+      ],
+    },
+    {
+      slug: "research-education-innovation",
+      number: "04",
+      name: "Research, Education & Innovation",
+      short: "Research & Innovation",
+      category: "research",
+      image: "research-laboratory",
+      summary:
+        "Generates African evidence, trains the next generation, and explores technology that works where resources are limited.",
+      activities: [
+        "Supporting research on African cancer questions",
+        "Training advocates, fellows and campus coordinators",
+        "The UgwuMind programme — AI, digital health and computational methods",
+        "Building the impact measurement system behind our numbers",
+        "Publishing evidence rather than claims",
+      ],
     },
   ],
 
@@ -172,7 +282,7 @@ export const NAV = [
     href: "/get-involved",
     children: [
       { label: "Become an Advocate", href: "/get-involved/advocates" },
-      { label: "AAC Fellowship", href: "/get-involved/fellowship" },
+      { label: "AAC Leadership Fellowship", href: "/get-involved/fellowship" },
       { label: "University Chapters", href: "/get-involved/chapters" },
       { label: "Volunteer", href: "/get-involved/volunteer" },
       { label: "Partner with us", href: "/get-involved/partner" },
@@ -184,6 +294,7 @@ export const FOOTER_NAV = {
   Navigate: [
     { label: "About", href: "/about" },
     { label: "What We Do", href: "/what-we-do" },
+    { label: "Departments", href: "/departments" },
     { label: "Programmes", href: "/programmes" },
     { label: "Events", href: "/events" },
     { label: "Blog", href: "/blog" },
@@ -191,7 +302,7 @@ export const FOOTER_NAV = {
   ],
   "Get Involved": [
     { label: "Become an Advocate", href: "/get-involved/advocates" },
-    { label: "AAC Fellowship", href: "/get-involved/fellowship" },
+    { label: "AAC Leadership Fellowship", href: "/get-involved/fellowship" },
     { label: "University Chapters", href: "/get-involved/chapters" },
     { label: "Volunteer", href: "/get-involved/volunteer" },
     { label: "Partner with us", href: "/get-involved/partner" },

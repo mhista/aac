@@ -21,9 +21,9 @@ export default async function ChaptersPage() {
   return (
     <>
       <PageHero
-        eyebrow="Get involved · Chapters"
-        title="Chapters on campus."
-        lede="Universities are full of people who can educate their peers, run screening drives, challenge misinformation and build things. A chapter is how that gets organised."
+        eyebrow="Get involved · Chapters on campus"
+        title="Replicate our model in your country."
+        lede="Universities are full of people who can educate their peers, run screening drives, challenge misinformation and build things. A chapter is how that gets organised — and how the model travels to a campus, a city or a country we are not in yet."
         aside={chapters.length > 0 ? <p className="mono">{chapters.length} {chapters.length === 1 ? "chapter" : "chapters"}</p> : null}
       />
 

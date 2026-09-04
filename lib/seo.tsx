@@ -115,7 +115,9 @@ export function organizationLd() {
         availableLanguage: "English",
       },
     ],
-    sameAs: ORG.social.map((s) => s.url),
+    /* Only official profile pages. A post URL here is invalid and gets
+       discarded, which weakens the entity signal rather than helping it. */
+    sameAs: ORG.social.filter((s) => s.profile).map((s) => s.url),
   };
 }
 
