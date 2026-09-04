@@ -7,6 +7,7 @@ import { ORG } from "@/lib/org";
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://aaci.ngo";
 
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
   title: {
@@ -73,15 +74,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link rel="preconnect" href="https://api.fontshare.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=JetBrains+Mono:wght@400;500&display=swap"
           rel="stylesheet"
-        />
-        <link
-          href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap"
-          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400..600&family=Instrument+Sans:wght@400..600&family=JetBrains+Mono:wght@400;500&display=swap"
         />
         <script
           type="application/ld+json"

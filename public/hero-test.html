@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AAC — raw hero test</title>
+<style>
+  /* No framework. No React. No Tailwind. No Lenis. Nothing but this file. */
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { background: #FAF8F4; font-family: system-ui, sans-serif; color: #171320; }
+
+  .label {
+    background: #1E0B45; color: #fff; padding: 10px 16px;
+    font: 500 13px/1.4 ui-monospace, monospace; letter-spacing: .04em;
+  }
+
+  /* ── Test A · background-image + background-size:cover ─────────────── */
+  .heroA {
+    position: relative;
+    min-height: 70svh;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    background-image: url("/img/hero-community-gathering.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: lime;           /* if you see LIME, the image is not covering */
+  }
+
+  /* ── Test B · <img> + object-fit:cover ────────────────────────────── */
+  .heroB { position: relative; min-height: 70svh; display: flex; align-items: flex-end; overflow: hidden; background: magenta; }
+  .heroB img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .scrim {
+    position: absolute; inset: 0;
+    background: linear-gradient(to top, rgba(23,11,48,.85) 0%, rgba(23,11,48,.55) 40%, rgba(23,11,48,0) 85%);
+  }
+  .inner { position: relative; width: 100%; max-width: 1280px; margin: 0 auto; padding: 120px 40px 48px; }
+  h1 { margin: 0; color: #fff; font-size: clamp(2.5rem, 5vw, 5rem); line-height: .95; letter-spacing: -.02em; font-weight: 400; }
+
+  /* Edge markers — if the red lines sit at the very edges of your window,
+     the document is full width and any strip you see is outside the page. */
+  .edge { position: fixed; top: 0; bottom: 0; width: 4px; background: red; z-index: 99; }
+  .edge.l { left: 0; } .edge.r { right: 0; }
+
+  #out { padding: 20px; font: 13px/1.7 ui-monospace, monospace; white-space: pre; background: #fff; border-top: 2px solid #1E0B45; }
+</style>
+</head>
+<body>
+
+<div class="edge l"></div><div class="edge r"></div>
+
+<div class="label">TEST A — background-image, background-size: cover. Fallback colour is LIME.</div>
+<section class="heroA" id="A">
+  <div class="scrim"></div>
+  <div class="inner"><h1>Cancer is not only a medical problem.</h1></div>
+</section>
+
+<div class="label">TEST B — &lt;img&gt; with object-fit: cover. Fallback colour is MAGENTA.</div>
+<section class="heroB" id="B">
+  <img src="/img/hero-community-gathering.jpg" alt="">
+  <div class="scrim"></div>
+  <div class="inner"><h1>Cancer is not only a medical problem.</h1></div>
+</section>
+
+<div id="out">measuring…</div>
+
+<script>
+  function r(el){ const b = el.getBoundingClientRect(); return Math.round(b.left) + " → " + Math.round(b.right) + "   (" + Math.round(b.width) + "px)"; }
+  function report(){
+    const A = document.getElementById('A'), B = document.getElementById('B'), img = B.querySelector('img');
+    document.getElementById('out').textContent = [
+      "window.innerWidth      " + window.innerWidth,
+      "documentElement client " + document.documentElement.clientWidth,
+      "documentElement scroll " + document.documentElement.scrollWidth,
+      "<html>                 " + r(document.documentElement),
+      "<body>                 " + r(document.body),
+      "Test A section         " + r(A),
+      "Test B section         " + r(B),
+      "Test B <img>           " + r(img),
+      "image natural size     " + img.naturalWidth + " x " + img.naturalHeight,
+      "",
+      "WHAT TO LOOK FOR",
+      "  Red bars at both window edges  -> the document is full width.",
+      "  Lime strips in Test A          -> background-size:cover is not covering.",
+      "  Magenta strips in Test B       -> object-fit:cover is not covering.",
+      "  Strips but no lime/magenta     -> what you see is NOT part of the page."
+    ].join("\n");
+  }
+  addEventListener('load', report);
+  addEventListener('resize', report);
+  report();
+</script>
+
+</body>
+</html>

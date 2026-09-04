@@ -38,7 +38,7 @@ export function Hero({
       {/* A background-image is invisible to the preload scanner, so LCP needs this. */}
       {!videoUrl && <link rel="preload" as="image" href={src} fetchPriority="high" />}
 
-      <section className="relative isolate flex min-h-[88svh] items-end overflow-hidden md:min-h-[94svh]">
+      <section className="relative isolate flex min-h-[88svh] items-end overflow-hidden md:min-h-[94svh] ">
         {/* 1 · Media */}
         {videoUrl ? (
           <video
@@ -80,8 +80,14 @@ export function Hero({
 
         {/* 3 · Content */}
         <div className="wrap relative w-full pb-16 pt-32 md:pb-24 md:pt-40">
+          {/* The tagline sits high in the hero, where the scrim has already
+              faded out, so small mono text at 80% white had nothing to hold on
+              to. Given its own translucent bar it reads at any brightness and
+              never depends on what the CMS puts behind it. */}
           {eyebrow && (
-            <p className="mono mb-6 !text-white/80">{eyebrow}</p>
+            <p className="mb-7 inline-flex rounded-pill border border-white/20 bg-[rgba(23,11,48,.42)] px-4 py-2 font-mono text-[0.72rem] font-medium uppercase leading-none tracking-[0.08em] text-white backdrop-blur-[6px]">
+              {eyebrow}
+            </p>
           )}
 
           <h1 className="max-w-[19ch] font-display text-[clamp(2.75rem,1.54rem+4.95vw,6rem)] leading-[.95] tracking-tighter text-white">

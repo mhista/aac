@@ -35,6 +35,12 @@ export const ORG = {
   ],
   countries: ["Nigeria", "Ghana", "Kenya"],
 
+  /* Applications and volunteer sign-up currently go to an external form.
+     This is the single place to change it — when the CMS ships and we have our
+     own multi-step application flow, point this at the internal route and every
+     Apply button across the site follows. */
+  applicationFormUrl: "https://tinyurl.com/4uru9y5k",
+
   mission:
     "To reduce the burden of cancer in Africa by empowering communities, strengthening cancer advocacy, supporting patients and survivors, advancing research, improving access to prevention and care, and using education, partnerships and innovation to create practical solutions to cancer challenges.",
 

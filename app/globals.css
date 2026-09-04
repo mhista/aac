@@ -121,9 +121,9 @@
 }
 
 :root{
-  --font-display:'Instrument Serif',Newsreader,'Iowan Old Style',Georgia,serif;
-  --font-body:'Satoshi','General Sans',Inter,system-ui,sans-serif;
-  --font-mono:'JetBrains Mono','Geist Mono',ui-monospace,SFMono-Regular,monospace;
+  --font-display:'Fraunces','Iowan Old Style',Georgia,serif;
+  --font-body:'Instrument Sans',Inter,system-ui,-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
   --ease-entrance:cubic-bezier(.16,1,.3,1);
   --ease-layout:cubic-bezier(.77,0,.175,1);
   --section-y:clamp(72px,10vw,160px);
@@ -156,7 +156,7 @@
 @layer components{
   .wrap{width:100%;max-width:var(--wrap);margin-inline:auto;padding-inline:var(--page-x)}
   .section{padding-block:var(--section-y)}
-  .display{font-family:var(--font-display);color:var(--color-text-display);letter-spacing:-.02em;line-height:1.1}
+  .display{font-family:var(--font-display);font-variation-settings:'SOFT' 0,'WONK' 0;color:var(--color-text-display);letter-spacing:-.02em;line-height:1.1}
   .mono{font-family:var(--font-mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--color-text-secondary)}
   .measure{max-width:66ch}
   .skip-link{position:absolute;left:-9999px;top:0;z-index:100;padding:12px 20px;background:var(--color-violet-600);color:#fff;border-radius:0 0 8px 0}

@@ -61,9 +61,9 @@ export default {
         "info-tint": "#E0E9EE",
       },
       fontFamily: {
-        display: ["Instrument Serif", "Newsreader", "Iowan Old Style", "Georgia", "serif"],
-        body: ["Satoshi", "General Sans", "Inter", "system-ui", "sans-serif"],
-        mono: ["JetBrains Mono", "Geist Mono", "ui-monospace", "SFMono-Regular", "monospace"],
+        display: ["Fraunces","Iowan Old Style","Georgia","serif"],
+        body: ["Instrument Sans","Inter","system-ui","sans-serif"],
+        mono: ["JetBrains Mono","ui-monospace","monospace"],
       },
       fontSize: {
         "display-xl": "clamp(2.75rem, 1.5429rem + 4.9524vw, 6rem)",

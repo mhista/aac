@@ -96,7 +96,7 @@ export function StackCards({ children }: { children: React.ReactNode[] }) {
           ))}
         </div>
       ) : (
-        <div ref={ref} className="hidden lg:block">
+        <div ref={ref} className="relative hidden lg:block">
           {children.map((child, i) => (
             <Row key={i} index={i} total={total} progress={scrollYProgress}>
               {child}
