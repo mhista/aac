@@ -16,25 +16,35 @@ export function Hero({
   videoUrl?: string | null;
 }) {
   return (
-    <section className="relative isolate flex min-h-[86svh] items-end overflow-hidden md:min-h-[92svh]">
+    /* Full-bleed breakout.
+       Rather than trusting that no ancestor constrains the width, this forces
+       the hero to span the viewport regardless: 100vw wide, pulled back by
+       half the difference between its container and the viewport. If nothing
+       is constraining it, the calc resolves to 0 and this is a no-op. Paired
+       with overflow-x:clip on body so the scrollbar cannot cause overflow. */
+    <section
+      className="relative isolate flex min-h-[86svh] items-end overflow-hidden md:min-h-[92svh]"
+      style={{ width: "100vw", marginLeft: "calc(50% - 50vw)", maxWidth: "none" }}
+    >
       {/* Layer 1 — media, furthest back */}
       <HeroMedia image={image} videoUrl={videoUrl} alt="" className="z-0" />
 
       {/* Layer 2 — scrim, ABOVE the media.
-          Two stacked gradients: a diagonal wash that anchors the text column,
-          plus a bottom-up fade so the lede and buttons stay readable over a
-          bright foreground. Sized for the worst case — a pale sky and sunlit
-          sand — because the CMS can swap this image for anything. */}
+
+          Vertical only. A horizontal (100deg) gradient runs its first stops
+          across ~340px of a 1425px-wide hero, which paints a flat slab down
+          the left edge — indistinguishable from a margin, and the reason this
+          looked like the image was clipped. Because a bottom-up gradient is
+          uniform across the width, no edge can read as a border.
+
+          The content is bottom-anchored (items-end), so bottom-up is also
+          where the legibility is actually needed. */}
       <div
         aria-hidden="true"
         className="absolute inset-0 z-[1]"
         style={{
-          background: [
-            // Anchors the text column, then releases so the photograph reads
-            "linear-gradient(100deg, rgba(30,11,69,.74) 0%, rgba(30,11,69,.52) 26%, rgba(30,11,69,.18) 52%, rgba(30,11,69,.04) 78%, rgba(30,11,69,0) 100%)",
-            // Light foot so the lede and buttons hold over a bright foreground
-            "linear-gradient(to top, rgba(30,11,69,.52) 0%, rgba(30,11,69,.16) 30%, rgba(30,11,69,0) 55%)",
-          ].join(","),
+          background:
+            "linear-gradient(to top, rgba(30,11,69,.80) 0%, rgba(30,11,69,.62) 26%, rgba(30,11,69,.34) 48%, rgba(30,11,69,.12) 68%, rgba(30,11,69,0) 86%)",
         }}
       />
 

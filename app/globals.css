@@ -134,8 +134,11 @@
 @layer base{
   *,*::before,*::after{box-sizing:border-box}
   html{-webkit-text-size-adjust:100%}
+  html{overflow-x:clip}
   body{
     margin:0;
+    overflow-x:clip;
+    width:100%;
     background:var(--color-surface-page);
     color:var(--color-text-primary);
     font-family:var(--font-body);

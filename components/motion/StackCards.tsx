@@ -30,7 +30,10 @@ import {
  * next row lands.
  */
 
-const GAP_VH = 62; // scroll distance between rows, in vh
+/* Scroll distance between row arrivals, in vh. 62 made the section 3,425px
+   tall for six cards — long stretches where a pinned row just sits there.
+   40 keeps each row readable without the dead scroll. */
+const GAP_VH = 40;
 
 function Row({
   children,

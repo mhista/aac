@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
 import clsx from "clsx";
 import { NAV, ORG } from "@/lib/org";
@@ -16,6 +17,7 @@ export function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const reduce = useReducedMotion();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 40);
@@ -113,17 +115,32 @@ export function Nav() {
               className="grid h-11 w-11 place-items-center rounded-pill lg:hidden"
             >
               <span className="relative block h-[10px] w-5">
-                <span className="absolute inset-x-0 top-0 h-[1.5px] bg-[var(--color-text-primary)]" />
-                <span className="absolute inset-x-0 bottom-0 h-[1.5px] bg-[var(--color-text-primary)]" />
+                <motion.span
+                  className="absolute inset-x-0 top-0 h-[1.5px] bg-[var(--color-text-primary)]"
+                  animate={open ? { rotate: 45, y: 4.25 } : { rotate: 0, y: 0 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                />
+                <motion.span
+                  className="absolute inset-x-0 bottom-0 h-[1.5px] bg-[var(--color-text-primary)]"
+                  animate={open ? { rotate: -45, y: -4.25 } : { rotate: 0, y: 0 }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                />
               </span>
             </button>
           </div>
         </nav>
       </header>
 
-      {/* Mobile overlay */}
-      {open && (
-        <div className="fixed inset-0 z-[60] flex flex-col bg-[var(--color-surface-page)] lg:hidden">
+      {/* Mobile overlay — slides down, items stagger in behind it */}
+      <AnimatePresence>
+        {open && (
+        <motion.div
+          className="fixed inset-0 z-[60] flex flex-col bg-[var(--color-surface-page)] lg:hidden"
+          initial={reduce ? { opacity: 0 } : { opacity: 0, y: "-100%" }}
+          animate={reduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
+          exit={reduce ? { opacity: 0 } : { opacity: 0, y: "-100%" }}
+          transition={reduce ? { duration: 0.2 } : { duration: 0.44, ease: [0.16, 1, 0.3, 1] }}
+        >
           <div className="flex items-center justify-between px-5 py-5">
             <Link href="/" onClick={() => setOpen(false)} className="flex items-center gap-2.5">
               <img src="/aac-icon-96.png" alt="" width={36} height={36} className="h-9 w-9" />
@@ -141,8 +158,18 @@ export function Nav() {
 
           <nav aria-label="Mobile" className="flex-1 overflow-y-auto px-5 pb-8">
             <ul className="flex flex-col">
-              {NAV.map((item) => (
-                <li key={item.label} className="border-b border-[var(--color-border-default)]">
+              {NAV.map((item, idx) => (
+                <motion.li
+                  key={item.label}
+                  className="border-b border-[var(--color-border-default)]"
+                  initial={reduce ? { opacity: 0 } : { opacity: 0, y: 18 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={
+                    reduce
+                      ? { duration: 0.2 }
+                      : { duration: 0.5, delay: 0.14 + idx * 0.06, ease: [0.16, 1, 0.3, 1] }
+                  }
+                >
                   <Link
                     href={item.href}
                     onClick={() => setOpen(false)}
@@ -165,7 +192,7 @@ export function Nav() {
                       ))}
                     </ul>
                   )}
-                </li>
+                </motion.li>
               ))}
             </ul>
 
@@ -188,8 +215,9 @@ export function Nav() {
               </ul>
             </div>
           </nav>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </>
   );
 }
