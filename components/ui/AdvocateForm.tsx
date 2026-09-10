@@ -98,6 +98,7 @@ export function AdvocateForm() {
 
   const [country, setCountry] = useState<string>("Nigeria");
   const [kind, setKind] = useState<string>("");
+  const [cv, setCv] = useState<string>("");
 
   if (done) {
     return (
@@ -278,6 +279,29 @@ export function AdvocateForm() {
           like to lead here.
         </p>
         <textarea id="adv-why" name="motivation" required rows={5} className={`${field} min-h-[132px] resize-y`} />
+      </div>
+
+      {/* ── CV ──────────────────────────────────────────────────────
+          Optional, and said so plainly. A required CV would turn away the
+          100-level student who does not have one yet, and those are exactly
+          the people this organisation is built to bring in. */}
+      <div className="mt-8">
+        <Label htmlFor="adv-cv" optional>Your CV</Label>
+        <p className="measure mb-2 text-caption leading-body text-[var(--color-text-secondary)]">
+          If you have one. It helps a coordinator see where you would fit, and it is only ever
+          seen by AAC coordinators — it is never published anywhere. PDF or Word, up to 5MB.
+        </p>
+        <input
+          id="adv-cv"
+          name="cv"
+          type="file"
+          accept=".pdf,.doc,.docx,.txt,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+          onChange={(e) => setCv(e.target.files?.[0]?.name ?? "")}
+          className="block w-full text-body file:mr-3 file:cursor-pointer file:rounded-pill file:border-0 file:bg-[var(--color-surface-sunken)] file:px-5 file:py-3 file:text-body file:font-medium file:text-[var(--color-text-primary)] hover:file:bg-[var(--color-violet-100)]"
+        />
+        {cv && (
+          <p className="mono mt-2">Attached: {cv}</p>
+        )}
       </div>
 
       <label className="mt-6 flex cursor-pointer items-start gap-3">

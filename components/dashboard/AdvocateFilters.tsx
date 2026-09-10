@@ -86,12 +86,12 @@ export function AdvocateFilters({
 
       <div className="flex flex-wrap items-center gap-2">
         <label className="relative flex-1 sm:max-w-[320px]">
-          <span className="sr-only">Search by name, email or school</span>
+          <span className="sr-only">Search by name, email, school or CV</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--color-text-secondary)]" />
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Name, email or school"
+            placeholder="Name, email, school or CV text"
             className={`${inputCls} pl-9`}
           />
         </label>

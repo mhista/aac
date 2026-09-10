@@ -144,6 +144,7 @@ editor. They are written to be re-runnable.
 | `013` | **Campus sites** — subdomains, per-chapter content scoping, campus executives |
 | `014` | **Advocates** — matches the Google Forms question for question |
 | `015` | **Impact reports** — chapter-scoped, and verification separated from editing |
+| `016` | **CVs** — a private storage bucket, text extraction, and the summariser |
 
 ### Roles
 
@@ -247,6 +248,35 @@ domain, campus subdomains, and the DNS trap worth knowing about before you hit
 it.
 
 ---
+
+## CVs
+
+Applicants may attach a CV. It is the only genuinely private file this project
+stores, and it is treated differently from everything else.
+
+Photographs go to ImageKit, whose URLs are public and unauthenticated by
+design — correct for something being published, wrong for a document carrying
+somebody's phone number and employer. **CVs go to a private Supabase Storage
+bucket with no read policy at all.** Uploads pass through a server action
+holding the service-role key, after validation; reads happen through a signed
+link the server mints for fifteen minutes, only after checking that the
+coordinator's reach covers that advocate. A storage policy could not express
+that rule, so there is no storage policy — one door, and it is guarded.
+
+Text is extracted on upload (PDF via `unpdf`, `.docx` via `mammoth`) so CVs are
+searchable from the advocates screen. A scan produces no text, and the panel
+says so rather than pretending. The extracted text is never sent to the
+browser; the list ships a flag saying whether text exists.
+
+`GROQ_API_KEY` additionally enables reading a CV into fields — skills,
+education, experience — on demand from a coordinator, never automatically at
+submission time. The prompt is instructed to omit rather than guess, the
+output is filtered against a schema before it renders, and the panel labels it
+as generated with the original one click away. It is a reading aid, never a
+decision.
+
+Nothing about CVs is a gate. Upload failure, parse failure and a missing Groq
+key each cost a note, never an application.
 
 ## Where the impact figures come from
 

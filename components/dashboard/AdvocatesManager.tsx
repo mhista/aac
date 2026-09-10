@@ -9,6 +9,8 @@ import { BTN, EmptyPanel, inputCls, Notice } from "./ui";
 import { useToast } from "./Toast";
 import { ConfirmDelete } from "./ConfirmDelete";
 import { ChevronDown } from "@/components/ui/Icon";
+import { CvPanel } from "./CvPanel";
+import type { CvSummary } from "@/lib/cv/summarise";
 
 /**
  * The people who signed up.
@@ -50,6 +52,14 @@ export type Advocate = {
   status: string;
   notes: string | null;
   submitted_at: string;
+  cv_filename: string | null;
+  cv_uploaded_at: string | null;
+  /* Whether any text could be read — never the text itself. The full CV can
+     run to 60,000 characters, and shipping a hundred of them to the browser
+     would be both a slow page and a needless spread of personal data. */
+  cv_has_text: boolean;
+  cv_summary: CvSummary | null;
+  cv_parsed_at: string | null;
 };
 
 const STATUS: Record<string, { label: string; bg: string; fg?: string }> = {
@@ -241,6 +251,17 @@ export function AdvocatesManager({
                     </div>
                   </div>
                 )}
+
+                <CvPanel
+                  advocateId={a.id}
+                  filename={a.cv_filename}
+                  uploadedAt={a.cv_uploaded_at}
+                  hasText={a.cv_has_text}
+                  summary={a.cv_summary}
+                  parsedAt={a.cv_parsed_at}
+                  canParse={canEdit}
+                  canDelete={canDelete}
+                />
 
                 {a.motivation && (
                   <div className="mt-4">

@@ -61,7 +61,11 @@ export default async function AdvocatesPage({
   const SELECT =
     "id,first_name,last_name,email,phone,gender,age_range,country,locality,chapter_id," +
     "profile_kind,interests,involvement,motivation,school,faculty,study_level," +
-    "professional_title,workplace,years_experience,occupation,source,status,notes,submitted_at";
+    "professional_title,workplace,years_experience,occupation,source,status,notes,submitted_at," +
+    "cv_filename,cv_uploaded_at,cv_text,cv_summary,cv_parsed_at";
+
+  /* cv_text is fetched so it can be reduced to a flag below — it is searched
+     in the database and never sent to the browser. */
 
   /* One builder, used for the page of rows and for the counts, so a filter can
      never apply to one and not the other. */
@@ -78,7 +82,7 @@ export default async function AdvocatesPage({
     if (q.trim()) {
       const n = q.trim().replace(/[%,()]/g, "");
       x = x.or(
-        `first_name.ilike.%${n}%,last_name.ilike.%${n}%,email.ilike.%${n}%,school.ilike.%${n}%,locality.ilike.%${n}%`
+        `first_name.ilike.%${n}%,last_name.ilike.%${n}%,email.ilike.%${n}%,school.ilike.%${n}%,locality.ilike.%${n}%,cv_text.ilike.%${n}%`
       );
     }
     return x;
@@ -107,7 +111,13 @@ export default async function AdvocatesPage({
     );
   }
 
-  const advocates = (rows.data ?? []) as unknown as Advocate[];
+  /* Strip the CV text before it crosses to the client. The search above runs
+     in Postgres, so nothing is lost by not shipping it — and this screen holds
+     the most sensitive data in the system, so it carries only what it draws. */
+  const advocates = ((rows.data ?? []) as any[]).map(({ cv_text, ...rest }) => ({
+    ...rest,
+    cv_has_text: !!cv_text,
+  })) as unknown as Advocate[];
   const shown = filteredCount.count ?? 0;
   const total = totalCount.count ?? 0;
   const unseen = newCount.count ?? 0;

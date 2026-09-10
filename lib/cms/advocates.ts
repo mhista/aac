@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth/session";
 import { rank } from "@/lib/auth/permissions";
+import { attachCv } from "@/lib/cms/cv";
 import {
   AGE_RANGES, COUNTRIES, EXPERIENCE, GENDERS, INTERESTS, INVOLVEMENT, PROFILE_KINDS,
   fieldForHeader, matchOption, splitMulti,
@@ -92,11 +93,23 @@ export async function registerAdvocate(form: FormData): Promise<Result> {
     return { ok: false, error: "Something went wrong saving your details. Please try again." };
   }
 
+  /* The CV last, and never fatally.
+     The application is already saved by this point, so a file that will not
+     upload costs a note rather than the whole submission — which is the right
+     trade when the CV is optional and the person is on a phone in Enugu. */
+  let note: string | undefined;
+  const cv = form.get("cv");
+  if (cv instanceof File && cv.size > 0) {
+    const res = await attachCv(email, cv);
+    note = res.ok ? res.note : `${res.error} You can send it to us later.`;
+  }
+
   revalidatePath("/dashboard/people");
   return {
     ok: true,
     message:
-      "You are in. A coordinator will be in touch — and if you gave a campus, whoever runs it will hear from you first.",
+      "You are in. A coordinator will be in touch — and if you gave a campus, whoever runs it will hear from you first." +
+      (note ? ` (${note})` : ""),
   };
 }
 
