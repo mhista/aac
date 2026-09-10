@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { Trash, Close } from "@/components/ui/Icon";
+import { useToast } from "./Toast";
 
 /**
  * A list you can act on in bulk.
@@ -50,7 +51,7 @@ export function SelectableTable({
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [armed, setArmed] = useState(false);
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const toast = useToast();
 
   const selectable = useMemo(() => rows.filter((r) => r.selectable), [rows]);
   const allPicked = selectable.length > 0 && selectable.every((r) => picked.has(r.id));
@@ -70,26 +71,6 @@ export function SelectableTable({
 
   return (
     <div className="space-y-3">
-      {msg && (
-        <div
-          role="status"
-          className="rounded-dash-sm border-l-2 px-4 py-3 text-[13px]"
-          style={{
-            background: msg.ok
-              ? "var(--color-feedback-success-surface)"
-              : "var(--color-feedback-danger-surface)",
-            color: msg.ok
-              ? "var(--color-feedback-success-text)"
-              : "var(--color-feedback-danger-text)",
-            borderColor: msg.ok
-              ? "var(--color-feedback-success-base)"
-              : "var(--color-feedback-danger-base)",
-          }}
-        >
-          {msg.text}
-        </div>
-      )}
-
       {picked.size > 0 && (
         <div className="flex flex-wrap items-center gap-3 rounded-dash-sm border border-[var(--color-border-brand)] bg-[var(--color-violet-100)] px-4 py-2.5">
           <span className="text-[13px] font-medium text-[var(--color-violet-700)]">
@@ -118,8 +99,8 @@ export function SelectableTable({
                 onClick={() =>
                   start(async () => {
                     const res = await deleteMany([...picked]);
-                    setMsg({
-                      ok: res.ok,
+                    toast({
+                      tone: res.ok ? "success" : "danger",
                       text: res.ok
                         ? res.message ?? res.id ?? "Deleted."
                         : res.error ?? "That did not work.",

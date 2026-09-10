@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { setFeatured } from "@/lib/cms/featuring";
 import { Notice } from "./ui";
+import { useToast } from "./Toast";
 
 /**
  * "Put this on the main AAC website."
@@ -31,7 +32,7 @@ export function FeatureToggle({
   const router = useRouter();
   const [pending, start] = useTransition();
   const [state, setState] = useState(on);
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const toast = useToast();
 
   const toggle = () =>
     start(async () => {
@@ -39,9 +40,9 @@ export function FeatureToggle({
       const res = await setFeatured(kind, id, next);
       if (res.ok) {
         setState(next);
-        setMsg({ ok: true, text: res.message ?? "Saved." });
+        toast({ tone: "success", text: res.message ?? "Saved." });
       } else {
-        setMsg({ ok: false, text: res.error });
+        toast({ tone: "danger", text: res.error });
       }
       router.refresh();
     });
@@ -56,11 +57,6 @@ export function FeatureToggle({
         aaci.ngo as well — the same entry, not a copy, so edits stay in one place.
       </p>
 
-      {msg && (
-        <div className="mb-3">
-          <Notice tone={msg.ok ? "success" : "danger"}>{msg.text}</Notice>
-        </div>
-      )}
 
       <label className="flex min-h-[44px] cursor-pointer items-center gap-2">
         <input

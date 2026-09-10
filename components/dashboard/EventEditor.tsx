@@ -9,6 +9,7 @@ import {
   addEventPhoto, updateEventPhoto, deleteEventPhoto, deleteEvent,
 } from "@/lib/cms/actions";
 import { Field, inputCls, BTN, StatusPill, Notice, toLocalInput } from "./ui";
+import { useToast } from "./Toast";
 import { MediaUploader } from "./MediaUploader";
 import { ArrowLeft, ArrowRight, Close } from "@/components/ui/Icon";
 import type { Profile } from "@/lib/auth/permissions";
@@ -54,7 +55,7 @@ export function EventEditor({
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
+  const toast = useToast();
 
   /* Typed-but-unsaved. Shown next to Save, and guarded on unload — the people
      using this are often on a phone with a dying battery, and losing a recap
@@ -71,14 +72,13 @@ export function EventEditor({
   const readOnly = event.status === "in_review" && !canPublishNow;
 
   function run(fn: () => Promise<{ ok: boolean; error?: string }>, success: string) {
-    setMsg(null);
     start(async () => {
       const r = await fn();
       if (r.ok) {
-        setMsg({ tone: "success", text: success });
+        toast({ tone: "success", text: success });
         setDirty(false);
         router.refresh();
-      } else setMsg({ tone: "danger", text: r.error ?? "Something went wrong." });
+      } else toast({ tone: "danger", text: r.error ?? "Something went wrong." });
     });
   }
 
@@ -156,11 +156,6 @@ export function EventEditor({
         })}
       </nav>
 
-      {msg && (
-        <div className="mb-5">
-          <Notice tone={msg.tone}>{msg.text}</Notice>
-        </div>
-      )}
 
       {/*
         ONE form, and every field stays mounted whichever step is showing.

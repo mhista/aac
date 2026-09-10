@@ -10,6 +10,7 @@ import {
 } from "@/lib/waitlist/admin";
 import { INTEREST_LABEL, BATCH_SIZE, WAITLIST_STATUSES, type WaitlistRow } from "@/lib/waitlist/shared";
 import { BTN, Field, inputCls, EmptyPanel, Notice, fmtDate } from "./ui";
+import { useToast } from "./Toast";
 
 /**
  * Applications manager.
@@ -52,7 +53,7 @@ export function ApplicationsManager({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
+  const toast = useToast();
 
   const [note, setNote] = useState(closedNote ?? "");
   const [subject, setSubject] = useState("Applications are open");
@@ -62,7 +63,7 @@ export function ApplicationsManager({
   const run = (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>) =>
     start(async () => {
       const res = await fn();
-      setMsg(
+      toast(
         res.ok
           ? { tone: "success", text: res.message ?? "Saved." }
           : { tone: "danger", text: res.error ?? "That did not work." }
@@ -119,10 +120,6 @@ export function ApplicationsManager({
 
   return (
     <div className="space-y-7">
-      {msg && (
-        <Notice tone={msg.tone === "success" ? "success" : "danger"}>{msg.text}</Notice>
-      )}
-
       {/* ── The switch ───────────────────────────────────────────── */}
       <section className="rounded-dash-md border border-[var(--color-border-default)] bg-white p-6">
         <div className="flex flex-wrap items-start justify-between gap-5">

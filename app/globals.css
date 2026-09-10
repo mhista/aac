@@ -161,6 +161,23 @@
   .measure{max-width:66ch}
   .skip-link{position:absolute;left:-9999px;top:0;z-index:100;padding:12px 20px;background:var(--color-violet-600);color:#fff;border-radius:0 0 8px 0}
   .skip-link:focus{left:0}
+
+  /* Toasts. Rising rather than fading, so the eye is drawn to the corner they
+     arrive in; the bar drains left to right to show the time remaining.
+     Both are switched off wholesale by the reduced-motion rule below, which
+     is correct — the message still appears and still dismisses itself, it
+     simply stops moving. */
+  .toast-in{animation:toast-in .22s cubic-bezier(.16,1,.3,1) both}
+  .toast-bar{animation:toast-drain linear forwards}
+}
+
+@keyframes toast-in{
+  from{opacity:0;transform:translateY(10px) scale(.985)}
+  to{opacity:1;transform:none}
+}
+@keyframes toast-drain{
+  from{transform:scaleX(1)}
+  to{transform:scaleX(0)}
 }
 
 @media (prefers-reduced-motion:reduce){

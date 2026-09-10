@@ -11,6 +11,7 @@ import {
   type Enquiry,
 } from "@/lib/forms/shared";
 import { BTN, inputCls, Notice, EmptyPanel, fmtDateTime } from "./ui";
+import { useToast } from "./Toast";
 import { ConfirmDelete } from "./ConfirmDelete";
 
 /**
@@ -48,15 +49,15 @@ export function EnquiriesManager({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const toast = useToast();
   const [openId, setOpenId] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
   const run = (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>) =>
     start(async () => {
       const res = await fn();
-      if (!res.ok) setMsg({ ok: false, text: res.error ?? "That did not work." });
-      else if (res.message) setMsg({ ok: true, text: res.message });
+      if (!res.ok) toast({ tone: "danger", text: res.error ?? "That did not work." });
+      else if (res.message) toast({ tone: "success", text: res.message });
       router.refresh();
     });
 
@@ -91,7 +92,6 @@ export function EnquiriesManager({
 
   return (
     <div className="space-y-5">
-      {msg && <Notice tone={msg.ok ? "success" : "danger"}>{msg.text}</Notice>}
 
       {unreadSupport > 0 && (
         <Notice

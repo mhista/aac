@@ -125,6 +125,123 @@ export async function inviteUser(form: FormData): Promise<Result> {
   return { ok: true, message: `Invited ${email} as ${ROLE_LABEL[role]}. ${note}` };
 }
 
+/**
+ * Give a chapter its coordinator, from the chapter itself.
+ *
+ * The coordinator was previously only settable from Users & roles, which
+ * meant creating a chapter and staffing it were two screens and two mental
+ * steps — and the step people forgot was the second one, leaving chapters on
+ * the public site with nobody reading their enquiries.
+ *
+ * Two ways in, because both are real. Sometimes the person already has an
+ * account and you are moving them; sometimes they are a student you met last
+ * week and all you have is an email address. Either way this ends with one
+ * named person attached to this chapter.
+ *
+ * `replace` is required to displace a sitting coordinator, and it is a
+ * deliberate second act rather than something that happens quietly: the
+ * database holds one active campus coordinator per chapter, and the person
+ * being replaced does not stop existing — they are moved to Advocate and
+ * unattached, which is reversible from Users & roles.
+ */
+export async function assignCoordinator(form: FormData): Promise<Result> {
+  const db = await createClient();
+  const me = await getProfile();
+  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  if (rank(me) < 80) {
+    return { ok: false, error: "Only an admin can attach a coordinator to a chapter." };
+  }
+
+  const str = (k: string) => {
+    const v = form.get(k);
+    const s = typeof v === "string" ? v.trim() : "";
+    return s === "" ? null : s;
+  };
+
+  const chapterId = str("chapter_id");
+  if (!chapterId) return { ok: false, error: "No chapter was given." };
+
+  const userId = str("user_id");
+  const email = str("email")?.toLowerCase();
+  const replace = form.get("replace") === "yes";
+
+  if (!userId && !email) {
+    return { ok: false, error: "Choose someone who already has an account, or type an email address to invite." };
+  }
+
+  const { data: chapter } = await db
+    .from("chapters")
+    .select("university,name")
+    .eq("id", chapterId)
+    .maybeSingle();
+  const where = (chapter as any)?.name || (chapter as any)?.university || "this chapter";
+
+  /* Who is sitting in the seat now. The index only binds active coordinators,
+     so this mirrors it exactly. */
+  const { data: sitting } = await db
+    .from("profiles")
+    .select("id,full_name,email")
+    .eq("chapter_id", chapterId)
+    .eq("role", "campus_coordinator")
+    .eq("status", "active")
+    .maybeSingle();
+
+  if (sitting && sitting.id !== userId) {
+    if (!replace) {
+      const who = (sitting as any).full_name || (sitting as any).email;
+      return {
+        ok: false,
+        error: `${who} is already the coordinator for ${where}. Use Replace if they are handing over — they will be moved to Advocate, which you can undo in Users & roles.`,
+      };
+    }
+    const { error: demote } = await db.rpc("set_user_role", {
+      p_user: (sitting as any).id,
+      p_role: "advocate",
+      p_chapter: null,
+      p_region: null,
+      p_department: null,
+      p_zone: null,
+    });
+    if (demote) {
+      return { ok: false, error: say(demote, "Could not move the current coordinator out of the role.") };
+    }
+  }
+
+  /* An existing account: change their role directly. */
+  if (userId) {
+    const { error } = await db.rpc("set_user_role", {
+      p_user: userId,
+      p_role: "campus_coordinator",
+      p_chapter: chapterId,
+      p_region: null,
+      p_department: null,
+      p_zone: null,
+    });
+    if (error) {
+      if (error.code === "23505" || /already has a campus coordinator/i.test(error.message)) {
+        return { ok: false, error: `${where} already has a coordinator. Refresh and try Replace.` };
+      }
+      return { ok: false, error: say(error, "Could not give that person the role.") };
+    }
+    revalidatePath("/dashboard/chapters");
+    revalidatePath("/dashboard/users");
+    return { ok: true, message: `Attached to ${where}.` };
+  }
+
+  /* Only an email: the shared invite path, which already handles the case
+     where that address turns out to have an account after all. */
+  const invite = new FormData();
+  invite.set("email", email!);
+  invite.set("role", "campus_coordinator");
+  invite.set("chapter_id", chapterId);
+  const full = str("full_name");
+  if (full) invite.set("full_name", full);
+
+  const res = await inviteUser(invite);
+  if (res.ok) revalidatePath("/dashboard/chapters");
+  return res;
+}
+
 export async function setUserRole(userId: string, form: FormData): Promise<Result> {
   const db = await createClient();
   const me = await getProfile();

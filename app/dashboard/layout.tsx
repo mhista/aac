@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { canUseDashboard } from "@/lib/auth/permissions";
 import { DashboardShell } from "@/components/dashboard/Shell";
 import { NoAccess } from "@/components/dashboard/NoAccess";
+import { ToastProvider } from "@/components/dashboard/Toast";
 import { ORG } from "@/lib/org";
 
 export const metadata = { title: "Dashboard", robots: { index: false, follow: false } };
@@ -65,5 +66,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   if (!canUseDashboard(profile)) return <NoAccess profile={profile} />;
 
-  return <DashboardShell profile={profile}>{children}</DashboardShell>;
+  return (
+    <ToastProvider>
+      <DashboardShell profile={profile}>{children}</DashboardShell>
+    </ToastProvider>
+  );
 }

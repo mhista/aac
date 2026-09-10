@@ -4,7 +4,7 @@ import { getProfile } from "@/lib/auth/session";
 import { rank } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { reachableChapters } from "@/lib/auth/reach";
-import { PageHeader, EmptyPanel, Notice, inputCls } from "@/components/dashboard/ui";
+import { PageHeader, EmptyPanel, Notice } from "@/components/dashboard/ui";
 import { TeamManager } from "@/components/dashboard/TeamManager";
 import { ChapterPicker } from "@/components/dashboard/ChapterPicker";
 
@@ -95,11 +95,10 @@ export default async function ExecutivesPage({
       <PageHeader
         title="Chapter executives"
         description={`The committee running ${selectedName}. Publishing someone puts them on the chapter's own website.`}
-        action={
-          chapters.length > 1 ? (
-            <ChapterPicker chapters={chapters} selected={selected} className={inputCls} />
-          ) : null
-        }
+        /* Always shown, even with one chapter. Which chapter you are editing
+           is worth stating on a screen where publishing puts somebody's face
+           on a website. */
+        action={<ChapterPicker chapters={chapters} selected={selected} />}
       />
 
       {!live && (

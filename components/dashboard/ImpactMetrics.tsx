@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createMetric, saveMetric, setMetricPublished, deleteMetric } from "@/lib/cms/impact";
 import { BTN, Field, inputCls, Notice, EmptyPanel, fmtDate } from "./ui";
+import { useToast } from "./Toast";
 import { ConfirmDelete } from "./ConfirmDelete";
 import { Plus } from "@/components/ui/Icon";
 
@@ -58,14 +59,14 @@ export function ImpactMetrics({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const toast = useToast();
   const [openId, setOpenId] = useState<string | null>(null);
 
   const run = (fn: () => Promise<{ ok: boolean; message?: string; error?: string; id?: string }>) =>
     start(async () => {
       const res = await fn();
-      if (!res.ok) setMsg({ ok: false, text: res.error ?? "That did not work." });
-      else if (res.message) setMsg({ ok: true, text: res.message });
+      if (!res.ok) toast({ tone: "danger", text: res.error ?? "That did not work." });
+      else if (res.message) toast({ tone: "success", text: res.message });
       if (res.ok && res.id) setOpenId(res.id);
       router.refresh();
     });
@@ -76,7 +77,6 @@ export function ImpactMetrics({
 
   return (
     <div className="space-y-5">
-      {msg && <Notice tone={msg.ok ? "success" : "danger"}>{msg.text}</Notice>}
 
       {!canEdit && (
         <Notice tone="info" title="You can see these but not change them">

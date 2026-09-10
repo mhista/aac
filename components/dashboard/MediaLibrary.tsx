@@ -6,6 +6,7 @@ import { updateAsset, deleteAsset } from "@/lib/cms/media";
 import { prettyBytes } from "@/lib/media/upload";
 import { MediaUploader } from "./MediaUploader";
 import { BTN, Field, inputCls, Notice, EmptyPanel, fmtDate } from "./ui";
+import { useToast } from "./Toast";
 import { Close } from "@/components/ui/Icon";
 import { ConfirmDelete } from "./ConfirmDelete";
 
@@ -52,7 +53,7 @@ export function MediaLibrary({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const toast = useToast();
   const [openId, setOpenId] = useState<string | null>(null);
   const [q, setQ] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -60,7 +61,7 @@ export function MediaLibrary({
   const run = (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>) =>
     start(async () => {
       const res = await fn();
-      setMsg({ ok: res.ok, text: res.ok ? res.message ?? "Saved." : res.error ?? "That did not work." });
+      toast({ tone: res.ok ? "success" : "danger", text: res.ok ? res.message ?? "Saved." : res.error ?? "That did not work." });
       if (res.ok) setOpenId(null);
       router.refresh();
     });
@@ -89,7 +90,6 @@ export function MediaLibrary({
 
   return (
     <div className="space-y-6">
-      {msg && <Notice tone={msg.ok ? "success" : "danger"}>{msg.text}</Notice>}
 
       {undescribed > 0 && filter.needs !== "alt" && (
         <Notice tone="warning" title={`${undescribed} file${undescribed === 1 ? "" : "s"} still need a description`}>

@@ -6,6 +6,7 @@ import {
   saveOrgDetails, saveContact, saveSocials, saveApplicationForms, saveFlags,
 } from "@/lib/cms/settings";
 import { BTN, Field, inputCls, Notice } from "./ui";
+import { useToast } from "./Toast";
 import { Plus, Trash } from "@/components/ui/Icon";
 
 /**
@@ -40,14 +41,14 @@ export function SettingsManager({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const toast = useToast();
   const [socials, setSocials] = useState(settings.social);
   const [forms, setForms] = useState(settings.applicationForms);
 
   const run = (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>) =>
     start(async () => {
       const res = await fn();
-      setMsg({ ok: res.ok, text: res.ok ? res.message ?? "Saved." : res.error ?? "That did not work." });
+      toast({ tone: res.ok ? "success" : "danger", text: res.ok ? res.message ?? "Saved." : res.error ?? "That did not work." });
       router.refresh();
     });
 
@@ -87,7 +88,6 @@ export function SettingsManager({
 
   return (
     <div className="space-y-5">
-      {msg && <Notice tone={msg.ok ? "success" : "danger"}>{msg.text}</Notice>}
 
       {!canEdit && (
         <Notice tone="info" title="You can see these but not change them">

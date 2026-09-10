@@ -9,6 +9,7 @@ import {
   deleteTeamMember,
 } from "@/lib/cms/team";
 import { BTN, Field, inputCls, Notice, EmptyPanel } from "./ui";
+import { useToast } from "./Toast";
 import { MediaUploader } from "./MediaUploader";
 import { ConfirmDelete } from "./ConfirmDelete";
 
@@ -73,13 +74,13 @@ export function TeamManager({
   const TIERS = chapterId ? CAMPUS_TIERS : NATIONAL_TIERS;
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const toast = useToast();
   const [openId, setOpenId] = useState<string | null>(null);
 
   const run = (fn: () => Promise<{ ok: boolean; message?: string; error?: string; id?: string }>) =>
     start(async () => {
       const res = await fn();
-      setMsg({ ok: res.ok, text: res.ok ? res.message ?? "Saved." : res.error ?? "That did not work." });
+      toast({ tone: res.ok ? "success" : "danger", text: res.ok ? res.message ?? "Saved." : res.error ?? "That did not work." });
       /* A newly created person opens straight into their form — the next
          thing you want to do is always type their name. */
       if (res.ok && res.id) setOpenId(res.id);
@@ -88,7 +89,6 @@ export function TeamManager({
 
   return (
     <div className="space-y-6">
-      {msg && <Notice tone={msg.ok ? "success" : "danger"}>{msg.text}</Notice>}
 
       {missingPhotos > 0 && (
         <Notice

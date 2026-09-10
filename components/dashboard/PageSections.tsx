@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { setSectionVisible, moveSection } from "@/lib/cms/pages";
 import { Notice, EmptyPanel } from "./ui";
+import { useToast } from "./Toast";
 import { ArrowRight } from "@/components/ui/Icon";
 
 /**
@@ -49,13 +50,13 @@ export function PageSections({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const toast = useToast();
 
   const run = (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>) =>
     start(async () => {
       const res = await fn();
-      if (!res.ok) setMsg({ ok: false, text: res.error ?? "That did not work." });
-      else if (res.message) setMsg({ ok: true, text: res.message });
+      if (!res.ok) toast({ tone: "danger", text: res.error ?? "That did not work." });
+      else if (res.message) toast({ tone: "success", text: res.message });
       router.refresh();
     });
 
@@ -72,7 +73,6 @@ export function PageSections({
 
   return (
     <div className="space-y-4">
-      {msg && <Notice tone={msg.ok ? "success" : "danger"}>{msg.text}</Notice>}
 
       {!canEdit && (
         <Notice tone="info" title="You can see this but not change it">

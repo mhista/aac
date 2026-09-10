@@ -5,6 +5,7 @@ import { useMemo, useState, useTransition } from "react";
 import { inviteUser, setUserRole, setUserStatus, revokeInvitation } from "@/lib/cms/users";
 import { RANK, ROLE_LABEL, type Profile, type Role } from "@/lib/auth/permissions";
 import { BTN, Field, inputCls, Notice, EmptyPanel, fmtDate } from "./ui";
+import { useToast } from "./Toast";
 
 /**
  * Users & roles.
@@ -78,7 +79,7 @@ export function UsersManager({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const toast = useToast();
   const [inviting, setInviting] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
   const [q, setQ] = useState("");
@@ -86,7 +87,7 @@ export function UsersManager({
   const run = (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>) =>
     start(async () => {
       const res = await fn();
-      setMsg({ ok: res.ok, text: res.ok ? res.message ?? "Saved." : res.error ?? "That did not work." });
+      toast({ tone: res.ok ? "success" : "danger", text: res.ok ? res.message ?? "Saved." : res.error ?? "That did not work." });
       if (res.ok) setInviting(false);
       router.refresh();
     });
@@ -113,7 +114,6 @@ export function UsersManager({
 
   return (
     <div className="space-y-6">
-      {msg && <Notice tone={msg.ok ? "success" : "danger"}>{msg.text}</Notice>}
 
       <div className="flex flex-wrap items-center gap-3">
         <input

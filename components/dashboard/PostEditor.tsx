@@ -10,6 +10,7 @@ import {
 import { Markdown, readingMinutes } from "@/lib/markdown";
 import { MediaUploader } from "./MediaUploader";
 import { Field, inputCls, BTN, StatusPill, Notice } from "./ui";
+import { useToast } from "./Toast";
 import { ArrowLeft } from "@/components/ui/Icon";
 import type { Profile } from "@/lib/auth/permissions";
 
@@ -64,7 +65,7 @@ export function PostEditor({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const toast = useToast();
   const [tab, setTab] = useState<"write" | "preview">("write");
   const [body, setBody] = useState(post.body ?? "");
 
@@ -90,9 +91,9 @@ export function PostEditor({
   const run = (fn: () => Promise<{ ok: boolean; message?: string; error?: string } | void>) =>
     start(async () => {
       const res = await fn();
-      if (res && !res.ok) setMsg({ ok: false, text: res.error ?? "That did not work." });
+      if (res && !res.ok) toast({ tone: "danger", text: res.error ?? "That did not work." });
       else {
-        if (res && res.message) setMsg({ ok: true, text: res.message });
+        if (res && res.message) toast({ tone: "success", text: res.message });
         setDirty(false);
       }
       router.refresh();
@@ -118,8 +119,6 @@ export function PostEditor({
           )}
         </div>
       </div>
-
-      {msg && <div className="mb-5"><Notice tone={msg.ok ? "success" : "danger"}>{msg.text}</Notice></div>}
 
       {post.status === "changes_requested" && (
         <div className="mb-5">

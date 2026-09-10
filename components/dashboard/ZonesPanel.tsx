@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { createZone, saveZone, deleteZone } from "@/lib/cms/zones";
 import { BTN, Field, inputCls, Notice } from "./ui";
+import { useToast } from "./Toast";
 import { ConfirmDelete } from "./ConfirmDelete";
 import { Plus } from "@/components/ui/Icon";
 
@@ -51,14 +52,14 @@ export function ZonesPanel({
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const toast = useToast();
 
   const run = (fn: () => Promise<{ ok: boolean; message?: string; error?: string }>) =>
     start(async () => {
       const res = await fn();
-      if (!res.ok) setMsg({ ok: false, text: res.error ?? "That did not work." });
+      if (!res.ok) toast({ tone: "danger", text: res.error ?? "That did not work." });
       else {
-        if (res.message) setMsg({ ok: true, text: res.message });
+        if (res.message) toast({ tone: "success", text: res.message });
         setAdding(false);
         setEditing(null);
       }
@@ -153,7 +154,6 @@ export function ZonesPanel({
 
       {open && (
         <div className="space-y-4 border-t border-[var(--color-border-subtle)] p-5">
-          {msg && <Notice tone={msg.ok ? "success" : "danger"}>{msg.text}</Notice>}
 
           <ul className="space-y-2">
             {zones.map((z) => (

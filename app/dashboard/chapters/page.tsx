@@ -52,10 +52,22 @@ export default async function ChaptersPage({
 
   if (status && status !== "all") q = q.eq("status", status);
 
-  const [chapters, regions, staff, zoneRows, zoneStaff] = await Promise.all([
+  const [chapters, regions, staff, freeStaff, zoneRows, zoneStaff] = await Promise.all([
     q,
     db.from("regions").select("id,name").order("name"),
     db.from("profiles").select("id,full_name,email,role,chapter_id").not("chapter_id", "is", null),
+    /* Who could take a chapter on. Anyone unattached and below admin — an
+       admin running one campus would be a demotion, and someone already
+       coordinating another chapter has to be moved from there, not from
+       here. */
+    db
+      .from("profiles")
+      .select("id,full_name,email,role,chapter_id,status")
+      .is("chapter_id", null)
+      .eq("status", "active")
+      .in("role", ["advocate", "contributor", "content_lead", "viewer", "campus_coordinator"])
+      .order("full_name")
+      .limit(500),
     /* Zones only exist after migration 011. A missing table returns an error
        rather than throwing, so the rest of the page still renders and the
        panel explains what to run. */
@@ -120,6 +132,13 @@ export default async function ChaptersPage({
         canPublish={canEdit(profile, "chapters")}
         canManageSites={rank(profile) >= 80}
         hostingReady={hostingConfigured()}
+        canAssign={rank(profile) >= 80}
+        candidates={(freeStaff.data ?? []).map((p: any) => ({
+          id: p.id,
+          name: p.full_name || p.email || "Unnamed",
+          email: p.email ?? "",
+          role: p.role,
+        }))}
         siteHost={(process.env.NEXT_PUBLIC_SITE_URL ?? "https://aaci.ngo")
           .replace(/^https?:\/\//, "")
           .replace(/^www\./, "")

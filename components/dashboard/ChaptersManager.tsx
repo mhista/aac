@@ -3,8 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { createChapter, saveChapter, deleteChapter, saveChapterSite } from "@/lib/cms/chapters";
+import { assignCoordinator } from "@/lib/cms/users";
 import { ROLE_LABEL } from "@/lib/auth/permissions";
 import { BTN, Field, inputCls, Notice, EmptyPanel } from "./ui";
+import { useToast } from "./Toast";
 import { ConfirmDelete } from "./ConfirmDelete";
 
 /**
@@ -80,6 +82,136 @@ const STATUS_TONE: Record<string, string> = {
 
 const COUNTRIES = ["Nigeria", "Ghana", "Kenya"];
 
+type Candidate = { id: string; name: string; email: string; role: string };
+
+/**
+ * Who runs this chapter.
+ *
+ * Deliberately here, on the chapter, rather than only in Users & roles.
+ * Creating a chapter and giving it a coordinator used to be two screens, and
+ * the second one was the one people forgot — which is how a chapter ends up
+ * live on the public site with nobody reading its enquiries.
+ *
+ * Two ways in because both happen: the person already has an account and you
+ * are moving them, or they are a student whose email you were given
+ * yesterday. The second is the common one for a new campus.
+ */
+function CoordinatorPanel({
+  chapterId, where, sitting, candidates, pending, run,
+}: {
+  chapterId: string;
+  where: string;
+  sitting: { name: string; role: string } | null;
+  candidates: Candidate[];
+  pending: boolean;
+  run: (fn: () => Promise<{ ok: boolean; message?: string; error?: string; id?: string }>) => void;
+}) {
+  const [mode, setMode] = useState<"existing" | "invite">("invite");
+  const [replace, setReplace] = useState(false);
+
+  return (
+    <div className="border-t border-[var(--color-border-subtle)] pt-4">
+      <p className="mono mb-1">Campus coordinator</p>
+
+      {sitting ? (
+        <p className="mb-3 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+          <strong className="text-[var(--color-text-primary)]">{sitting.name}</strong> runs {where}.
+          A chapter has one coordinator — attaching someone else moves {sitting.name.split(" ")[0]} to
+          Advocate, which you can undo in Users &amp; roles.
+        </p>
+      ) : (
+        <p className="mb-3 max-w-[62ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+          Nobody runs {where} yet. Until someone does, enquiries from this chapter reach no one.
+        </p>
+      )}
+
+      <div className="mb-3 flex flex-wrap gap-2">
+        {(
+          [
+            ["invite", "Invite by email"],
+            ["existing", `Choose someone with an account${candidates.length ? ` (${candidates.length})` : ""}`],
+          ] as const
+        ).map(([v, label]) => (
+          <button
+            key={v}
+            type="button"
+            onClick={() => setMode(v)}
+            className={`mono rounded-pill px-3 py-1.5 transition-colors ${
+              mode === v
+                ? "bg-[var(--color-violet-100)] !text-[var(--color-violet-700)]"
+                : "border border-[var(--color-border-default)] hover:bg-[var(--color-surface-page-alt)]"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <form
+        action={(fd) => {
+          fd.set("chapter_id", chapterId);
+          if (replace) fd.set("replace", "yes");
+          run(() => assignCoordinator(fd));
+        }}
+        className="flex flex-wrap items-end gap-3"
+      >
+        {mode === "existing" ? (
+          <Field label="Person" htmlFor={`co-u-${chapterId}`}>
+            <select id={`co-u-${chapterId}`} name="user_id" className={`${inputCls} min-w-[260px]`} required>
+              <option value="">Choose someone</option>
+              {candidates.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name} — {p.email}
+                </option>
+              ))}
+            </select>
+          </Field>
+        ) : (
+          <>
+            <Field
+              label="Email address"
+              htmlFor={`co-e-${chapterId}`}
+              hint="They get the role the first time they sign in with this address."
+            >
+              <input
+                id={`co-e-${chapterId}`}
+                name="email"
+                type="email"
+                required
+                spellCheck={false}
+                autoCapitalize="none"
+                placeholder="name@example.com"
+                className={`${inputCls} min-w-[240px]`}
+              />
+            </Field>
+            <Field label="Their name" htmlFor={`co-n-${chapterId}`} hint="Optional, for the invitation email.">
+              <input id={`co-n-${chapterId}`} name="full_name" className={`${inputCls} min-w-[180px]`} />
+            </Field>
+          </>
+        )}
+
+        <button type="submit" disabled={pending} className={BTN.secondary}>
+          {sitting ? "Attach" : "Make coordinator"}
+        </button>
+      </form>
+
+      {sitting && (
+        <label className="mt-3 flex cursor-pointer items-start gap-2">
+          <input
+            type="checkbox"
+            checked={replace}
+            onChange={(e) => setReplace(e.target.checked)}
+            className="mt-0.5 h-4 w-4 accent-[var(--color-action-primary)]"
+          />
+          <span className="text-[12px] leading-relaxed text-[var(--color-text-secondary)]">
+            Yes, replace {sitting.name} — move them to Advocate and unattach them from {where}.
+          </span>
+        </label>
+      )}
+    </div>
+  );
+}
+
 export function ChaptersManager({
   chapters,
   regions,
@@ -92,6 +224,8 @@ export function ChaptersManager({
   canManageSites,
   siteHost,
   hostingReady,
+  canAssign,
+  candidates,
 }: {
   chapters: Chapter[];
   regions: Opt[];
@@ -107,17 +241,21 @@ export function ChaptersManager({
   siteHost: string;
   /** Whether this deployment can register the address with the host itself. */
   hostingReady: boolean;
+  /** Attaching a coordinator is an admin act. */
+  canAssign: boolean;
+  /** People with an account who could take a chapter on. */
+  candidates: Candidate[];
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
-  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const toast = useToast();
   const [openId, setOpenId] = useState<string | null>(null);
   const [q, setQ] = useState("");
 
   const run = (fn: () => Promise<{ ok: boolean; message?: string; error?: string; id?: string }>) =>
     start(async () => {
       const res = await fn();
-      setMsg({ ok: res.ok, text: res.ok ? res.message ?? "Saved." : res.error ?? "That did not work." });
+      toast({ tone: res.ok ? "success" : "danger", text: res.ok ? res.message ?? "Saved." : res.error ?? "That did not work." });
       if (res.ok && res.id) setOpenId(res.id);
       router.refresh();
     });
@@ -152,7 +290,6 @@ export function ChaptersManager({
 
   return (
     <div className="space-y-6">
-      {msg && <Notice tone={msg.ok ? "success" : "danger"}>{msg.text}</Notice>}
 
       {liveEmpty > 0 && (
         <Notice tone="warning" title={`${liveEmpty} live chapter${liveEmpty === 1 ? " has" : "s have"} nobody attached`}>
@@ -436,8 +573,19 @@ export function ChaptersManager({
                           </div>
                         )}
 
+                        {canAssign && (
+                          <CoordinatorPanel
+                            chapterId={c.id}
+                            where={c.name || c.university}
+                            sitting={attached.find((p) => p.role === "campus_coordinator") ?? null}
+                            candidates={candidates}
+                            pending={pending}
+                            run={run}
+                          />
+                        )}
+
                         <div className="border-t border-[var(--color-border-subtle)] pt-4">
-                          <p className="mono mb-2">Attached to this chapter</p>
+                          <p className="mono mb-2">Everyone attached to this chapter</p>
                           {attached.length === 0 ? (
                             <p className="text-[12px] text-[var(--color-text-secondary)]">
                               Nobody yet. People are attached by giving them a role in Users &amp;
