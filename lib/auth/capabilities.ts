@@ -78,7 +78,11 @@ export const CAPABILITIES: Record<Area, Grant> = {
   impactReports: { read: [...CAMPUS, "board_member"], write: CAMPUS, remove: ADMIN, scoped: true },
 
   /* ── People's personal data ─────────────────────────────────────── */
-  advocates: { read: [...COORDINATORS, "board_member"], write: COORDINATORS, remove: ADMIN },
+  /* A campus coordinator needs the advocates on their own campus — contacting
+     them is the job. They do not see anybody else's, and an advocate not yet
+     attached to a chapter belongs to nobody, so only regional and above see
+     those. Enforced in RLS (014); repeated here so the interface agrees. */
+  advocates: { read: [...CAMPUS, "board_member"], write: CAMPUS, remove: ADMIN, scoped: true },
   applications: { read: [...COORDINATORS, "board_member"], write: ADMIN, remove: ADMIN },
   enquiries: { read: [...CAMPUS, "board_member"], write: CAMPUS, remove: ADMIN },
 

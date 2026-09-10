@@ -30,6 +30,7 @@ export async function ApplyPanel({
   note,
   mailtoOnly = false,
   interest = "other",
+  applyHref,
 }: {
   title: string;
   body: string;
@@ -37,6 +38,14 @@ export async function ApplyPanel({
   note?: string;
   mailtoOnly?: boolean;
   interest?: "advocate" | "fellowship" | "chapter" | "volunteer" | "other";
+  /**
+   * A form on this site that replaces the per-country Google Forms.
+   *
+   * Advocates apply at /join now. The country buttons stay for the intakes
+   * that still run through Google — the country is the first question of our
+   * own form, so a picker in front of it would be asking twice.
+   */
+  applyHref?: string;
 }) {
   const settings = mailtoOnly
     ? { open: false, closedNote: null, forms: [] }
@@ -61,6 +70,15 @@ export async function ApplyPanel({
                   </Button>
                   <Button href="/contact" variant="secondary" size="lg">Ask a question first</Button>
                 </div>
+                <p className="mono mt-6">{note ?? "We reply within two to five working days."}</p>
+              </>
+            ) : open && applyHref ? (
+              <>
+                <div className="mt-8 flex flex-wrap items-center gap-3">
+                  <Button href={applyHref} size="lg" arrow>Start your application</Button>
+                  <Button href="/contact" variant="secondary" size="lg">Ask a question first</Button>
+                </div>
+                <p className="mono mt-4">Takes about two minutes. Nigeria, Ghana and Kenya.</p>
                 <p className="mono mt-6">{note ?? "We reply within two to five working days."}</p>
               </>
             ) : open ? (

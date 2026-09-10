@@ -286,6 +286,7 @@ export default function AdvocatesPage() {
         body="Applications are reviewed after you fill in the application form. Tell us your name, country, what you do, and one sentence on why you want to be an advocate. Everything else — how projects work, how participation is documented, how the certificates are earned — is covered at orientation."
         subject="Cancer Advocate application"
         interest="advocate"
+        applyHref="/join"
       />
 
       <HandbookDownload />
