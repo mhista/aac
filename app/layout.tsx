@@ -9,6 +9,7 @@ import { ORG } from "@/lib/org";
 import { JsonLd, organizationLd, websiteLd, SITE } from "@/lib/seo";
 import { getPublicSettings } from "@/lib/cms/public-settings";
 import { CampusBar } from "@/components/ui/CampusBar";
+import { Assistant } from "@/components/ui/Assistant";
 import { getCampus, originFor } from "@/lib/site/campus";
 
 
@@ -123,6 +124,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <ChromeGate>
           <Footer />
           <ScrollTop />
+          {/* Behind the CMS flag, and off by default. An assistant that
+              answers from an empty database is worse than none, so it is
+              switched on from Site settings once there is content for it to
+              answer from. */}
+          {settings.flags.chatbot && <Assistant />}
         </ChromeGate>
       </body>
     </html>

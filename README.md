@@ -291,10 +291,36 @@ Verifying is separated from editing at the database level: you cannot verify
 your own report below regional level, and a verified report's reach cannot be
 edited in place without reopening it first.
 
+## The assistant
+
+A chat window on a cancer charity's site is not a general-purpose chatbot, and
+building one would have been the whole mistake. People arrive here having found
+a lump, or having just been told a diagnosis. What they need is a fact about
+AAC or a human being — never a language model's opinion about their health.
+
+So it has one job: answer questions about the organisation from the
+organisation's own published facts, and hand over quickly when the question is
+not that. It refuses medical questions outright — no cautious answer, no
+disclaimered guess — and points to the support address.
+
+It is **grounded, not knowledgeable.** `lib/ai/context.ts` assembles the real
+facts (org details, published figures with their dates, active chapters,
+programmes, events, articles, FAQs) and the prompt says to answer from those or
+say it does not know. Asked how many people AAC has helped, an ungrounded model
+produces a number that sounds right and is fiction — the same "never invent a
+figure" rule, applied where a machine would otherwise break it most eagerly.
+
+Switched on from **Dashboard → Site settings**, off by default, because an
+assistant answering from an empty database is worse than none.
+
+> **Model note.** `llama-3.3-70b-versatile` moved to Groq's Enterprise tier and
+> returns a refusal on a Developer key. The default is `openai/gpt-oss-20b`;
+> `GROQ_MODEL` overrides it without a code change.
+
 ## Still to build
 
-The Groq chat assistant · a vector logo (SVG/EPS) · the volunteer handbook
-reissued without the legacy name.
+A vector logo (SVG/EPS) · the volunteer handbook reissued without the legacy
+name.
 
 ---
 

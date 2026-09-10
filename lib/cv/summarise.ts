@@ -20,6 +20,10 @@
  * person turned away by a parser.
  */
 
+import { groqChat } from "@/lib/ai/groq";
+
+export { groqConfigured } from "@/lib/ai/groq";
+
 export type CvSummary = {
   headline?: string;
   skills?: string[];
@@ -33,7 +37,6 @@ export type CvSummary = {
   empty?: boolean;
 };
 
-const MODEL = "llama-3.3-70b-versatile";
 const MAX_CHARS = 24_000;
 
 const SYSTEM = `You extract structured facts from a CV for a cancer NGO's volunteer coordinator.
@@ -51,10 +54,6 @@ Rules, in order of importance:
 Shape:
 {"headline":string,"skills":string[],"education":[{"qualification":string,"institution":string,"year":string}],"experience":[{"role":string,"organisation":string,"period":string}],"languages":string[],"years_experience":string,"notable":string}`;
 
-export function groqConfigured() {
-  return !!process.env.GROQ_API_KEY;
-}
-
 export async function summariseCv(
   text: string
 ): Promise<{ ok: true; summary: CvSummary } | { ok: false; error: string }> {
@@ -69,51 +68,29 @@ export async function summariseCv(
     return { ok: false, error: "There is not enough text in this CV to read." };
   }
 
+  const res = await groqChat({
+    messages: [
+      { role: "system", content: SYSTEM },
+      { role: "user", content: text.slice(0, MAX_CHARS) },
+    ],
+    json: true,
+    /* Deterministic. Two coordinators opening the same CV should not be shown
+       two different readings of it. */
+    temperature: 0,
+    maxTokens: 1200,
+    timeoutMs: 30_000,
+  });
+
+  if (!res.ok) return { ok: false, error: res.error };
+
+  let parsed: unknown;
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: MODEL,
-        /* Deterministic. Two coordinators opening the same CV should not see
-           two different readings of it. */
-        temperature: 0,
-        max_tokens: 1200,
-        response_format: { type: "json_object" },
-        messages: [
-          { role: "system", content: SYSTEM },
-          { role: "user", content: text.slice(0, MAX_CHARS) },
-        ],
-      }),
-      signal: AbortSignal.timeout(30_000),
-    });
-
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      if (res.status === 401) return { ok: false, error: "The Groq key was refused. It may have been rotated." };
-      if (res.status === 429) return { ok: false, error: "Groq is rate-limiting us. Try again in a minute." };
-      return { ok: false, error: `Groq returned ${res.status}. ${body.slice(0, 140)}` };
-    }
-
-    const json = await res.json();
-    const content = json?.choices?.[0]?.message?.content;
-    if (typeof content !== "string") return { ok: false, error: "Groq returned nothing readable." };
-
-    let parsed: any;
-    try {
-      parsed = JSON.parse(content);
-    } catch {
-      return { ok: false, error: "Groq did not return valid JSON." };
-    }
-
-    return { ok: true, summary: clean(parsed) };
-  } catch (err: any) {
-    const timedOut = err?.name === "TimeoutError" || err?.name === "AbortError";
-    return {
-      ok: false,
-      error: timedOut ? "Groq took too long to answer. Try again." : "Could not reach Groq.",
-    };
+    parsed = JSON.parse(res.text);
+  } catch {
+    return { ok: false, error: "Groq did not return valid JSON." };
   }
+
+  return { ok: true, summary: clean(parsed) };
 }
 
 /**

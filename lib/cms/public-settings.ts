@@ -29,6 +29,10 @@ export interface PublicSettings {
   registration: { body: string; number: string; country: string };
   email: { general: string; support: string };
   social: { name: string; url: string; profile: boolean }[];
+  /* Only the flags the public site itself needs. The dashboard reads the full
+     set through getSiteSettings; putting them all here would mean every edit
+     to an unrelated switch busted the cache for every page on the site. */
+  flags: { chatbot: boolean };
 }
 
 async function read(): Promise<PublicSettings> {
@@ -46,6 +50,11 @@ async function read(): Promise<PublicSettings> {
     },
     email: { general: ORG.email.general, support: ORG.email.support },
     social: ORG.social,
+    /* Off unless the database says otherwise. An assistant that answers from
+       an empty database, or one running against an unreachable CMS, is worse
+       than no assistant — so an unreadable settings row means no chat bubble
+       rather than a broken one. */
+    flags: { chatbot: false },
   };
 
   if (!url || !key) return fallback;
@@ -54,7 +63,7 @@ async function read(): Promise<PublicSettings> {
     const db = createClient(url, key, { auth: { persistSession: false } });
     const { data } = await db
       .from("site_settings")
-      .select("org,contact,socials")
+      .select("org,contact,socials,feature_flags")
       .eq("id", 1)
       .maybeSingle();
 
@@ -63,6 +72,7 @@ async function read(): Promise<PublicSettings> {
     const org = (data.org ?? {}) as Record<string, string>;
     const contact = (data.contact ?? {}) as Record<string, string>;
     const socials = (data.socials ?? {}) as Record<string, string>;
+    const flags = (data.feature_flags ?? {}) as Record<string, unknown>;
 
     return {
       name: org.name || fallback.name,
@@ -84,6 +94,7 @@ async function read(): Promise<PublicSettings> {
             .map((s) => ({ ...s, url: socials[s.name.toLowerCase()] ?? s.url }))
             .filter((s) => s.url)
         : fallback.social,
+      flags: { chatbot: flags.chatbot === true },
     };
   } catch {
     return fallback;

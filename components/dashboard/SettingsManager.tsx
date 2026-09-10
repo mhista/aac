@@ -227,7 +227,11 @@ export function SettingsManager({
         {[
           ["donations", "Donations", "Off until a payment provider is configured and verified."],
           ["newsletter", "Newsletter sign-up", "The footer sign-up form."],
-          ["chatbot", "Assistant", "The question-answering assistant. Not built yet."],
+          [
+            "chatbot",
+            "Assistant",
+            "The “Ask a question” window in the corner of the public site. It answers only from what is published here, refuses medical questions, and points people to the support address. Leave it off until there is enough content for it to answer from.",
+          ],
         ].map(([key, label, note]) => (
           <label key={key} className="flex items-start gap-3">
             <input
