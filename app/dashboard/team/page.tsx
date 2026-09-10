@@ -37,8 +37,11 @@ export default async function TeamPage() {
   }
 
   const db = await createClient();
+  /* AAC's own people only. A chapter's executives are a different list with a
+     different audience, edited by that chapter at Dashboard → Chapter
+     executives — mixing forty committees into the board page would bury it. */
   const { data } = db
-    ? await db.from("team_members").select("*").order("position")
+    ? await db.from("team_members").select("*").is("chapter_id", null).order("position")
     : { data: [] };
 
   /* Scan the folder rather than keeping a list in code — a file dropped in is

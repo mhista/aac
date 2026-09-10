@@ -1,5 +1,7 @@
 import { getProfile } from "@/lib/auth/session";
 import { canRead, canEdit, canRemove, refusalFor } from "@/lib/auth/capabilities";
+import { rank } from "@/lib/auth/permissions";
+import { hostingConfigured } from "@/lib/hosting/vercel-domains";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader, EmptyPanel } from "@/components/dashboard/ui";
 import { ChaptersManager } from "@/components/dashboard/ChaptersManager";
@@ -41,7 +43,9 @@ export default async function ChaptersPage({
 
   let q = db
     .from("chapters")
-    .select("id,name,university,city,country,region_id,zone_id,member_count,status,founded_at,created_at")
+    .select(
+      "id,name,university,city,country,region_id,zone_id,member_count,status,founded_at,created_at,subdomain,site_enabled"
+    )
     .order("country")
     .order("university")
     .limit(500);
@@ -114,6 +118,12 @@ export default async function ChaptersPage({
         canCreate={canEdit(profile, "chapters")}
         canDelete={canRemove(profile, "chapters")}
         canPublish={canEdit(profile, "chapters")}
+        canManageSites={rank(profile) >= 80}
+        hostingReady={hostingConfigured()}
+        siteHost={(process.env.NEXT_PUBLIC_SITE_URL ?? "https://aaci.ngo")
+          .replace(/^https?:\/\//, "")
+          .replace(/^www\./, "")
+          .replace(/\/$/, "")}
       />
     </div>
   );

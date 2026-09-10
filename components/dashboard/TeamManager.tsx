@@ -33,12 +33,20 @@ type Member = {
   photo: { url: string; alt: string } | null;
 };
 
-const TIERS = [
+const NATIONAL_TIERS: [string, string][] = [
   ["board", "Board"],
   ["director", "Director"],
   ["regional", "Regional coordinator"],
+  ["zonal", "Zonal coordinator"],
   ["campus", "Campus coordinator"],
-] as const;
+];
+
+/* A campus committee has its own shape. Offering a chapter's secretary the
+   choice of "Board" would be inviting a mistake. */
+const CAMPUS_TIERS: [string, string][] = [
+  ["executive", "Chapter executive"],
+  ["campus", "Campus coordinator"],
+];
 
 export function TeamManager({
   members,
@@ -46,13 +54,23 @@ export function TeamManager({
   missingPhotos,
   canEdit,
   canDelete,
+  chapterId = null,
+  addLabel = "Add a person",
+  emptyBody = "Board members, directors and coordinators added here appear on the About page once published.",
+  readOnlyNote,
 }: {
   members: Member[];
   photos: string[];
   missingPhotos: number;
   canEdit: boolean;
   canDelete: boolean;
+  /** Set when this list is one chapter's executives rather than AAC's own. */
+  chapterId?: string | null;
+  addLabel?: string;
+  emptyBody?: string;
+  readOnlyNote?: string;
 }) {
+  const TIERS = chapterId ? CAMPUS_TIERS : NATIONAL_TIERS;
   const router = useRouter();
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -85,22 +103,24 @@ export function TeamManager({
 
       {canEdit ? (
         <div className="flex justify-end">
-          <button type="button" disabled={pending} onClick={() => run(createTeamMember)} className={BTN.primary}>
-            Add a person
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => run(() => createTeamMember(chapterId))}
+            className={BTN.primary}
+          >
+            {addLabel}
           </button>
         </div>
       ) : (
         <Notice tone="info" title="You can see this list but not change it">
-          The board and directors are edited by department directors and admins. This is the
-          organisation&rsquo;s public face, so it is not a per-chapter setting.
+          {readOnlyNote ??
+            "The board and directors are edited by department directors and admins. This is the organisation’s public face, so it is not a per-chapter setting."}
         </Notice>
       )}
 
       {members.length === 0 ? (
-        <EmptyPanel
-          title="Nobody added yet"
-          body="Board members, directors and coordinators added here appear on the About page once published."
-        />
+        <EmptyPanel title="Nobody added yet" body={emptyBody} />
       ) : (
         <ul className="space-y-3">
           {members.map((m) => {

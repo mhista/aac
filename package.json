@@ -11,7 +11,8 @@
     "upload:images": "node scripts/upload-to-imagekit.mjs",
     "images:list": "node scripts/upload-to-imagekit.mjs --list",
     "check:server": "node scripts/check-server-exports.mjs",
-    "verify": "node scripts/check-server-exports.mjs && tsc --noEmit"
+    "verify": "node scripts/check-server-exports.mjs && tsc --noEmit",
+    "images:doctor": "node scripts/upload-to-imagekit.mjs --doctor"
   },
   "dependencies": {
     "next": "^15.5.4",

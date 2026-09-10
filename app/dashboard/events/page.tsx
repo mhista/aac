@@ -2,51 +2,72 @@ import Link from "next/link";
 import { getProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 import { rank, canWrite } from "@/lib/auth/permissions";
-import { PageHeader, StatusPill, EmptyPanel, BTN, fmtDate, STATUS, Notice } from "@/components/dashboard/ui";
+import { PageHeader, StatusPill, EmptyPanel, BTN, fmtDate, Notice } from "@/components/dashboard/ui";
 import { createEventAndOpen, deleteEvent, deleteManyEvents } from "@/lib/cms/actions";
 import { ConfirmDelete } from "@/components/dashboard/ConfirmDelete";
 import { SelectableTable, type Row } from "@/components/dashboard/SelectableTable";
+import { ContentFilters } from "@/components/dashboard/ContentFilters";
 import { canRemove } from "@/lib/auth/capabilities";
+import { reachableChapters, canFeature, describeReach, applyReach, seesEverything } from "@/lib/auth/reach";
 import { Plus } from "@/components/ui/Icon";
 
 export const dynamic = "force-dynamic";
 
-const FILTERS = ["all", "draft", "in_review", "changes_requested", "published"] as const;
-
 export default async function EventsList({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; error?: string; deleted?: string }>;
+  searchParams: Promise<{
+    status?: string;
+    chapter?: string;
+    q?: string;
+    featured?: string;
+    error?: string;
+    deleted?: string;
+  }>;
 }) {
-  const { status, error, deleted } = await searchParams;
+  const sp = await searchParams;
+  const { status = "all", chapter = "all", q: search = "", error, deleted } = sp;
+  const featured = sp.featured === "1";
+
   const profile = await getProfile();
   const db = await createClient();
   if (!profile) return null;
 
   const scoped = rank(profile) < 60 && !!profile.chapter_id;
+  const mayFeature = canFeature(profile);
+
+  /* Which chapters this person can even see. RLS already restricts the rows
+     coming back; this is what fills the filter menu, and it is derived from
+     the same reach rule so the two can never disagree. */
+  const chapters = await reachableChapters(profile);
 
   let rows: any[] = [];
   if (db) {
-    let q = db
+    let query = db
       .from("events")
-      .select("id,title,slug,status,starts_at,city,country,chapter_id,created_by,updated_at")
+      .select("id,title,slug,status,starts_at,city,country,chapter_id,is_featured,created_by,updated_at")
       .order("updated_at", { ascending: false })
-      .limit(100);
-    if (status && status !== "all") q = q.eq("status", status);
-    if (scoped) q = q.eq("chapter_id", profile.chapter_id);
-    const { data } = await q;
+      .limit(200);
+
+    query = applyReach(query, profile, chapters);
+
+    if (status !== "all") query = query.eq("status", status);
+    if (featured) query = query.eq("is_featured", true);
+    if (search.trim()) query = query.ilike("title", `%${search.trim()}%`);
+    if (chapter === "aac") query = query.is("chapter_id", null);
+    else if (chapter !== "all") query = query.eq("chapter_id", chapter);
+
+    const { data } = await query;
     rows = data ?? [];
   }
+
+  const chapterName = new Map(chapters.map((c) => [c.id, c.name]));
 
   return (
     <div className="mx-auto max-w-[1100px]">
       <PageHeader
         title="Events"
-        description={
-          scoped
-            ? "Events for your chapter. Anything you create goes to a coordinator for review before it appears on the site."
-            : "Every event across the organisation. Published events are live on the public site."
-        }
+        description={describeReach(profile, "event")}
         action={
           canWrite(profile) ? (
             <form action={createEventAndOpen}>
@@ -72,32 +93,27 @@ export default async function EventsList({
         </div>
       )}
 
-      <nav aria-label="Filter by status" className="mb-5 flex flex-wrap gap-2">
-        {FILTERS.map((f) => {
-          const active = (status ?? "all") === f;
-          return (
-            <Link
-              key={f}
-              href={f === "all" ? "/dashboard/events" : `/dashboard/events?status=${f}`}
-              aria-current={active ? "true" : undefined}
-              className={`mono rounded-pill px-3 py-1.5 transition-colors duration-hover ${
-                active
-                  ? "bg-[var(--color-violet-100)] !text-[var(--color-violet-700)]"
-                  : "border border-[var(--color-border-default)] hover:bg-[var(--color-surface-page-alt)]"
-              }`}
-            >
-              {f === "all" ? "All" : STATUS[f]?.label ?? f}
-            </Link>
-          );
-        })}
-      </nav>
+      <ContentFilters
+        base="/dashboard/events"
+        status={status}
+        chapter={chapter}
+        q={search}
+        featured={featured}
+        chapters={chapters}
+        showFeatured={mayFeature}
+        showAac={seesEverything(profile)}
+      />
 
       {rows.length === 0 ? (
         <EmptyPanel
-          title={status && status !== "all" ? "Nothing with that status" : "No events yet"}
+          title={
+            status !== "all" || chapter !== "all" || search || featured
+              ? "Nothing matches"
+              : "No events yet"
+          }
           body={
-            status && status !== "all"
-              ? "Try a different filter, or create a new event."
+            status !== "all" || chapter !== "all" || search || featured
+              ? "Try a different filter or search, or clear them to see everything."
               : "An event is how a screening, outreach session or training gets onto the public site — with its own photographs and an honest account of what changed."
           }
           action={
@@ -112,7 +128,11 @@ export default async function EventsList({
         <SelectableTable
           caption="Events, most recently updated first"
           noun="event"
-          headers={["Title", "Status", "Date", "Location", "Updated", ""]}
+          headers={
+            scoped
+              ? ["Title", "Status", "Date", "Location", "Updated", ""]
+              : ["Title", "Whose", "Status", "Date", "Location", "Updated", ""]
+          }
           deleteMany={deleteManyEvents}
           rows={rows.map((e): Row => {
             const isPublic = e.status === "published" || e.status === "scheduled";
@@ -131,6 +151,27 @@ export default async function EventsList({
                 >
                   {e.title}
                 </Link>,
+                /* Whose it is, and whether it also runs on the main site.
+                   Hidden from people who only ever see one chapter — a column
+                   that reads the same on every row is noise. */
+                ...(scoped
+                  ? []
+                  : [
+                      <span key="w" className="flex flex-wrap items-center gap-1.5">
+                        <span className="mono">
+                          {e.chapter_id ? chapterName.get(e.chapter_id) ?? "A chapter" : "AAC"}
+                        </span>
+                        {e.is_featured && (
+                          <span
+                            className="mono rounded-pill px-1.5 py-0.5"
+                            style={{ background: "var(--color-violet-100)", color: "var(--color-violet-700)" }}
+                            title="Also shown on the main AAC website"
+                          >
+                            Main site
+                          </span>
+                        )}
+                      </span>,
+                    ]),
                 <StatusPill key="s" status={e.status} />,
                 <span key="d" className="text-[var(--color-text-secondary)]">{fmtDate(e.starts_at)}</span>,
                 <span key="l" className="text-[var(--color-text-secondary)]">

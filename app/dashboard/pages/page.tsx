@@ -1,7 +1,7 @@
 import { getProfile } from "@/lib/auth/session";
 import { canRead, canEdit, refusalFor } from "@/lib/auth/capabilities";
 import { createClient } from "@/lib/supabase/server";
-import { getEvents, getPosts, getImpactMetrics, getChapters } from "@/lib/cms";
+import { getEvents, getPosts, getImpactMetrics, getChapters, getTeam } from "@/lib/cms";
 import { PageHeader, EmptyPanel } from "@/components/dashboard/ui";
 import { PageSections } from "@/components/dashboard/PageSections";
 
@@ -45,7 +45,7 @@ export default async function PagesScreen() {
     );
   }
 
-  const [{ data: sections }, events, posts, metrics, chapters] = await Promise.all([
+  const [{ data: sections }, events, posts, metrics, chapters, team] = await Promise.all([
     db
       .from("page_sections")
       .select("id,type,position,is_visible")
@@ -55,6 +55,7 @@ export default async function PagesScreen() {
     getPosts({ limit: 3 }),
     getImpactMetrics(),
     getChapters(),
+    getTeam(),
   ]);
 
   /* What each section would actually render today. */
@@ -69,6 +70,9 @@ export default async function PagesScreen() {
     featuredEvents: events.length
       ? `${events.length} event${events.length === 1 ? "" : "s"}`
       : "Nothing to show yet",
+    leadership: team.length
+      ? `${team.length} ${team.length === 1 ? "person" : "people"} published`
+      : "Nobody published yet",
     countryReach: chapters.length
       ? `${chapters.length} chapter${chapters.length === 1 ? "" : "s"}`
       : "No chapters live yet",

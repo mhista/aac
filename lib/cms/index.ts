@@ -11,6 +11,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { ORG } from "@/lib/org";
+import { currentChapterId } from "@/lib/site/campus";
 
 /* ── Types ─────────────────────────────────────────────────────────── */
 
@@ -76,10 +77,12 @@ export interface TeamMember {
   id: string;
   full_name: string;
   role_title: string | null;
-  tier: "board" | "director" | "regional" | "campus" | null;
+  tier: "board" | "director" | "regional" | "zonal" | "campus" | "executive" | null;
   bio: string | null;
   photo: MediaRef | null;
   linkedin: string | null;
+  /* Null for AAC's own people; set for a chapter's executives. */
+  chapter_id?: string | null;
 }
 
 export interface ImpactMetric {
@@ -153,15 +156,38 @@ async function safe<T>(
 
 const PUBLISHED = { column: "status", value: "published" } as const;
 
+/* ── Which site is this? ───────────────────────────────────────────────
+   Every content query is filtered by the campus the request arrived on, and
+   the call sites do not pass it — they cannot forget to. `/events` is one
+   route serving many sites; what changes underneath it is the data.
+
+   On a campus site: that chapter's content, and only that chapter's.
+   On the main site: AAC's own content, plus whatever an admin or content lead
+   has chosen to feature from the chapters.
+
+   `scope` is spelled as a Supabase filter rather than done in JavaScript so
+   the database still does the paging — `limit(4)` has to mean four rows we
+   will actually show, not four rows we might throw away.                */
+
+async function scope<T>(q: T): Promise<T> {
+  const chapter = await currentChapterId();
+  const f = q as any;
+  return chapter
+    ? f.eq("chapter_id", chapter)
+    : f.or("chapter_id.is.null,is_featured.eq.true");
+}
+
 /* ── Queries ───────────────────────────────────────────────────────── */
 
 export async function getEvents(opts: { limit?: number; upcoming?: boolean } = {}): Promise<EventRecord[]> {
   return safe<EventRecord[]>(
     async (db) => {
-      let q = db
-        .from("events")
-        .select("id,slug,title,subtitle,event_type,cover,starts_at,ends_at,venue,city,country,attendance,display_index")
-        .eq(PUBLISHED.column, PUBLISHED.value);
+      let q = await scope(
+        db
+          .from("events")
+          .select("id,slug,title,subtitle,event_type,cover,starts_at,ends_at,venue,city,country,attendance,display_index")
+          .eq(PUBLISHED.column, PUBLISHED.value),
+      );
       if (opts.upcoming === true) q = q.gte("starts_at", new Date().toISOString()).order("starts_at", { ascending: true });
       else if (opts.upcoming === false) q = q.lt("starts_at", new Date().toISOString()).order("starts_at", { ascending: false });
       else q = q.order("starts_at", { ascending: false });
@@ -175,7 +201,10 @@ export async function getEvents(opts: { limit?: number; upcoming?: boolean } = {
 
 export async function getEvent(slug: string): Promise<EventRecord | null> {
   const rows = await safe<EventRecord[]>(
-    async (db) => await db.from("events").select("*").eq("slug", slug).eq(PUBLISHED.column, PUBLISHED.value).limit(1),
+    async (db) =>
+      await (await scope(
+        db.from("events").select("*").eq("slug", slug).eq(PUBLISHED.column, PUBLISHED.value)
+      )).limit(1),
     [],
     "event"
   );
@@ -193,11 +222,13 @@ export async function getEventMedia(eventId: string): Promise<MediaRef[]> {
 export async function getPosts(opts: { limit?: number; category?: string } = {}): Promise<PostRecord[]> {
   return safe<PostRecord[]>(
     async (db) => {
-      let q = db
-        .from("posts")
-        .select("id,slug,title,excerpt,cover,category,read_minutes,published_at,author")
-        .eq(PUBLISHED.column, PUBLISHED.value)
-        .order("published_at", { ascending: false });
+      let q = await scope(
+        db
+          .from("posts")
+          .select("id,slug,title,excerpt,cover,category,read_minutes,published_at,author")
+          .eq(PUBLISHED.column, PUBLISHED.value)
+          .order("published_at", { ascending: false })
+      );
       if (opts.category) q = q.eq("category_slug", opts.category);
       if (opts.limit) q = q.limit(opts.limit);
       return await q;
@@ -209,7 +240,10 @@ export async function getPosts(opts: { limit?: number; category?: string } = {})
 
 export async function getPost(slug: string): Promise<PostRecord | null> {
   const rows = await safe<PostRecord[]>(
-    async (db) => await db.from("posts").select("*").eq("slug", slug).eq(PUBLISHED.column, PUBLISHED.value).limit(1),
+    async (db) =>
+      await (await scope(
+        db.from("posts").select("*").eq("slug", slug).eq(PUBLISHED.column, PUBLISHED.value)
+      )).limit(1),
     [],
     "post"
   );
@@ -219,11 +253,13 @@ export async function getPost(slug: string): Promise<PostRecord | null> {
 export async function getProgrammes(opts: { limit?: number; pillar?: string } = {}): Promise<ProgrammeRecord[]> {
   return safe<ProgrammeRecord[]>(
     async (db) => {
-      let q = db
-        .from("programmes")
-        .select("id,slug,title,subtitle,excerpt,pillar,cover,status_label,locations")
-        .eq(PUBLISHED.column, PUBLISHED.value)
-        .order("created_at", { ascending: false });
+      let q = await scope(
+        db
+          .from("programmes")
+          .select("id,slug,title,subtitle,excerpt,pillar,cover,status_label,locations")
+          .eq(PUBLISHED.column, PUBLISHED.value)
+          .order("created_at", { ascending: false })
+      );
       if (opts.pillar) q = q.eq("pillar", opts.pillar);
       if (opts.limit) q = q.limit(opts.limit);
       return await q;
@@ -235,17 +271,30 @@ export async function getProgrammes(opts: { limit?: number; pillar?: string } = 
 
 export async function getProgramme(slug: string): Promise<ProgrammeRecord | null> {
   const rows = await safe<ProgrammeRecord[]>(
-    async (db) => await db.from("programmes").select("*").eq("slug", slug).eq(PUBLISHED.column, PUBLISHED.value).limit(1),
+    async (db) =>
+      await (await scope(
+        db.from("programmes").select("*").eq("slug", slug).eq(PUBLISHED.column, PUBLISHED.value)
+      )).limit(1),
     [],
     "programme"
   );
   return rows[0] ?? null;
 }
 
+/**
+ * People.
+ *
+ * On the main site this is the board, the directors and the coordinators —
+ * rows with no chapter. On a campus site it is that campus's own executives.
+ * Same function, same components, different site: a chapter's page shows its
+ * own committee rather than a national board its visitors did not come for.
+ */
 export async function getTeam(tier?: TeamMember["tier"]): Promise<TeamMember[]> {
+  const chapter = await currentChapterId();
   return safe<TeamMember[]>(
     async (db) => {
       let q = db.from("team_members").select("*").eq("is_published", true).order("position");
+      q = chapter ? q.eq("chapter_id", chapter) : q.is("chapter_id", null);
       if (tier) q = q.eq("tier", tier);
       return await q;
     },

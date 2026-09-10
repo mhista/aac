@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { createChapter, saveChapter, deleteChapter } from "@/lib/cms/chapters";
+import { createChapter, saveChapter, deleteChapter, saveChapterSite } from "@/lib/cms/chapters";
 import { ROLE_LABEL } from "@/lib/auth/permissions";
 import { BTN, Field, inputCls, Notice, EmptyPanel } from "./ui";
 import { ConfirmDelete } from "./ConfirmDelete";
@@ -30,9 +30,39 @@ type Chapter = {
   member_count: number | null;
   status: string;
   founded_at: string | null;
+  subdomain: string | null;
+  site_enabled: boolean | null;
 };
 
 type Opt = { id: string; name: string };
+
+/**
+ * A web address, proposed rather than demanded.
+ *
+ * Nobody running a chapter should have to know what a subdomain is, so the
+ * field arrives pre-filled from the university's name and they only have to
+ * agree with it. "University of Nigeria, Nsukka" → "university-of-nigeria".
+ */
+function suggest(university: string, existing: string[]): string {
+  const base =
+    university
+      .toLowerCase()
+      .replace(/^the\s+/, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .split("-")
+      .filter((w) => !["of", "the", "and"].includes(w))
+      .join("-")
+      .slice(0, 40)
+      .replace(/-+$/, "") || "chapter";
+
+  if (!existing.includes(base)) return base;
+  for (let i = 2; i < 50; i++) {
+    const tryIt = `${base}-${i}`.slice(0, 40).replace(/-+$/, "");
+    if (!existing.includes(tryIt)) return tryIt;
+  }
+  return base;
+}
 
 const STATUS_LABEL: Record<string, string> = {
   pending: "Being set up",
@@ -59,6 +89,9 @@ export function ChaptersManager({
   canCreate,
   canDelete,
   canPublish,
+  canManageSites,
+  siteHost,
+  hostingReady,
 }: {
   chapters: Chapter[];
   regions: Opt[];
@@ -68,6 +101,12 @@ export function ChaptersManager({
   canCreate: boolean;
   canDelete: boolean;
   canPublish: boolean;
+  /** Naming and switching on campus websites is an admin act. */
+  canManageSites: boolean;
+  /** "aaci.ngo" — shown after the address so the result is obvious. */
+  siteHost: string;
+  /** Whether this deployment can register the address with the host itself. */
+  hostingReady: boolean;
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
@@ -100,6 +139,12 @@ export function ChaptersManager({
     for (const c of shown) (map[c.country] ??= []).push(c);
     return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
   }, [shown]);
+
+  /* Addresses already spoken for, so a suggestion never collides. */
+  const taken = useMemo(
+    () => chapters.map((c) => c.subdomain).filter((s): s is string => !!s),
+    [chapters]
+  );
 
   const liveEmpty = chapters.filter(
     (c) => c.status === "active" && (people[c.id]?.length ?? 0) === 0
@@ -190,6 +235,25 @@ export function ChaptersManager({
                       </span>
 
                       {c.member_count ? <span className="mono">{c.member_count} members</span> : null}
+
+                      {c.site_enabled && c.subdomain ? (
+                        <a
+                          href={`https://${c.subdomain}.${siteHost}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mono rounded-pill px-2 py-1 underline-offset-2 hover:underline"
+                          style={{ background: "var(--color-feedback-success-surface)" }}
+                        >
+                          {c.subdomain}.{siteHost} ↗
+                        </a>
+                      ) : c.subdomain ? (
+                        <span
+                          className="mono rounded-pill px-2 py-1"
+                          style={{ background: "var(--color-feedback-warning-surface)" }}
+                        >
+                          Site off
+                        </span>
+                      ) : null}
 
                       <span
                         className="mono rounded-pill px-2 py-1"
@@ -312,6 +376,65 @@ export function ChaptersManager({
                             Save
                           </button>
                         </form>
+
+                        {canManageSites && (
+                          <div className="border-t border-[var(--color-border-subtle)] pt-4">
+                            <p className="mono mb-1">This chapter&rsquo;s own website</p>
+                            <p className="mb-3 max-w-[62ch] text-[12px] leading-relaxed text-[var(--color-text-secondary)]">
+                              Switching this on gives the chapter its own address, showing only its
+                              events, articles and executives. Nothing is copied — the same entries
+                              its coordinator creates in this dashboard appear there. Switching it
+                              off takes the address down and leaves everything else untouched.
+                            </p>
+
+                            {!hostingReady && (
+                              <div className="mb-3">
+                                <Notice tone="warning" title="Addresses cannot go live from here yet">
+                                  You can name and save an address, but this deployment has no
+                                  hosting token, so it cannot register it. Add{" "}
+                                  <code>VERCEL_TOKEN</code> and <code>VERCEL_PROJECT_ID</code> to
+                                  the hosting environment variables and redeploy — see DEPLOY.md
+                                  §&nbsp;4b.
+                                </Notice>
+                              </div>
+                            )}
+
+                            <form
+                              action={(fd) => run(() => saveChapterSite(c.id, fd))}
+                              className="flex flex-wrap items-end gap-3"
+                            >
+                              <Field label="Address" htmlFor={`sd-${c.id}`}>
+                                <span className="flex items-center gap-1">
+                                  <input
+                                    id={`sd-${c.id}`}
+                                    name="subdomain"
+                                    defaultValue={c.subdomain ?? suggest(c.university, taken)}
+                                    spellCheck={false}
+                                    autoCapitalize="none"
+                                    className={`${inputCls} max-w-[200px]`}
+                                  />
+                                  <span className="mono whitespace-nowrap">.{siteHost}</span>
+                                </span>
+                              </Field>
+
+                              <label className="flex min-h-[44px] cursor-pointer items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  name="site_enabled"
+                                  defaultChecked={c.site_enabled ?? false}
+                                  className="h-4 w-4 accent-[var(--color-action-primary)]"
+                                />
+                                <span className="text-[13px] text-[var(--color-text-primary)]">
+                                  Live on the internet
+                                </span>
+                              </label>
+
+                              <button type="submit" disabled={pending} className={BTN.secondary}>
+                                Save address
+                              </button>
+                            </form>
+                          </div>
+                        )}
 
                         <div className="border-t border-[var(--color-border-subtle)] pt-4">
                           <p className="mono mb-2">Attached to this chapter</p>

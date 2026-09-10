@@ -72,6 +72,93 @@ Do this last — the `.vercel.app` URL is enough for review.
 
 ---
 
+## 4b · Campus websites (`unn.aaci.ngo` and the rest)
+
+Every chapter can have its own address. Once the three one-time steps below are
+done, chapters are created entirely from the dashboard — Chapters → open a
+chapter → *This chapter's own website* — with no visit to Cloudflare or Vercel.
+
+### Do NOT accept Vercel's nameserver prompt
+
+If you add `*.aaci.ngo` in Vercel, it shows **Invalid Configuration** and asks
+you to change your nameservers to `ns1.vercel-dns.com` / `ns2.vercel-dns.com`.
+
+**Don't.** Nameservers decide which company answers *all* DNS questions for
+`aaci.ngo`. Handing them to Vercel means Cloudflare stops being asked, and every
+record in it goes dead — including the Zoho `MX`, `SPF`, `DKIM` and `DMARC`
+records. `contact@aaci.ngo` and `support@aaci.ngo` would stop receiving mail
+until they were rebuilt in Vercel's DNS.
+
+Vercel insists on this only because a *wildcard* certificate has to be proved
+with a DNS record that Vercel writes itself. So we don't use a wildcard
+certificate. **Delete the `*.aaci.ngo` entry from Vercel → Domains.** The three
+valid rows (`aaci.ngo`, `www.aaci.ngo`, `aac-plum.vercel.app`) stay as they are.
+
+### Step 1 — one wildcard CNAME in Cloudflare
+
+| Type | Name | Content | Proxy |
+|---|---|---|---|
+| CNAME | `*` | `cname.vercel-dns.com` | **DNS only** (grey cloud) |
+
+This makes every possible subdomain *resolve* to Vercel. It is added once and
+never touched again. Cloudflare stays in charge of DNS, so Zoho is untouched.
+
+> **Check your existing `*` record first.** There is already a wildcard `A`
+> record pointing at `185.53.179.128` — a registrar parking address, not a web
+> host. If it stays, every campus subdomain lands on a parking page. Delete it
+> and add the CNAME above.
+>
+> Grey cloud matters: proxied through Cloudflare, Vercel cannot complete the
+> certificate check and subdomains show SSL warnings.
+
+### Step 2 — a hosting token, so the dashboard can finish the job
+
+Resolving is not enough; Vercel also has to be told which specific addresses to
+answer for, so each gets its own certificate. The dashboard does that over
+Vercel's API when an admin switches a campus site on.
+
+1. Vercel → account menu → **Settings → Tokens → Create**. Scope it to this
+   project, give it no expiry (or diarise the renewal).
+2. Vercel → project → **Settings → General**, copy the **Project ID**.
+3. Add both under **Settings → Environment Variables**, Production:
+
+```
+VERCEL_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxx
+VERCEL_PROJECT_ID=prj_xxxxxxxxxxxxxxxx
+# VERCEL_TEAM_ID=team_xxxx   ← only if the project belongs to a team, not "Somtech's projects"
+```
+
+4. Redeploy.
+
+`VERCEL_TOKEN` can create and delete domains on the account. Treat it like a
+password: never commit it, never paste it into a chat, and rotate it if it
+leaks. It is only ever read on the server.
+
+Until it is set, the dashboard says so plainly and still lets an admin name an
+address — it just cannot make it live.
+
+### Step 3 — check it
+
+Open `anything.aaci.ngo`. You should get **the main AAC site** — an unrecognised
+subdomain is deliberately treated as the main site, not an error. A parking
+page means Step 1 is missing.
+
+Then switch one real chapter's site on in the dashboard. It should report
+*"Live at unn.aaci.ngo"*. The certificate takes a minute or two on first use.
+
+### What this buys
+
+- Cloudflare keeps DNS; Zoho email is never at risk.
+- Addresses stay short: `unn.aaci.ngo`, not `unn.chapters.aaci.ngo`.
+- Adding or closing a chapter site is one switch in the dashboard. Renaming an
+  address releases the old one; deleting a chapter releases its address.
+
+**Development.** Campus sites work locally at `unn.localhost:3000` in Chrome,
+Edge and Safari with no hosts-file edit. Firefox needs a `hosts` entry. No token
+is needed locally — only the database row matters.
+
+---
+
 ## 5 · After that
 
 Every `git push` to `main` deploys automatically. Every pull request gets its own

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth/session";
 import { rank } from "@/lib/auth/permissions";
+import { claimHost, releaseHost } from "@/lib/hosting/vercel-domains";
 
 /**
  * University chapters.
@@ -118,6 +119,135 @@ export async function saveChapter(id: string, form: FormData): Promise<Result> {
   return { ok: true, message: "Saved." };
 }
 
+/**
+ * Naming and switching on a chapter's own website.
+ *
+ * Kept apart from saveChapter because it is a different act with a different
+ * audience. Editing a chapter's city is routine coordinator work; giving a
+ * chapter a public web address, or taking one away, is an admin decision that
+ * changes what exists on the internet.
+ *
+ * There is no Cloudflare call here, and that is the design. DNS carries one
+ * wildcard CNAME for *.aaci.ngo pointing at the host, set up once, so every
+ * possible subdomain already resolves — and Cloudflare stays authoritative, so
+ * the Zoho mail records keep working. Nobody opens Cloudflare to add a chapter.
+ *
+ * What the host still needs is to be told which specific addresses to answer
+ * for, so that each gets its own certificate. That is the one outside call,
+ * and it is made here rather than left as a manual step — the whole point was
+ * that a coordinator's site appears without anyone touching infrastructure.
+ *
+ * The order matters: the row is saved FIRST, then the address is registered.
+ * If the hosting API is down, an admin has still recorded the decision and can
+ * retry by pressing Save again, rather than losing it to somebody else's
+ * outage.
+ */
+export async function saveChapterSite(id: string, form: FormData): Promise<Result> {
+  const db = await createClient();
+  const me = await getProfile();
+  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  if (rank(me) < 80) {
+    return { ok: false, error: "Only an admin can give a chapter its own website or take one down." };
+  }
+
+  const raw = String(form.get("subdomain") ?? "").trim().toLowerCase();
+  const enabled = form.get("site_enabled") === "on";
+
+  if (enabled && !raw) {
+    return { ok: false, error: "Give the site an address before switching it on." };
+  }
+
+  if (raw) {
+    if (!/^[a-z0-9]([a-z0-9-]{0,38}[a-z0-9])?$/.test(raw) || raw.includes("--")) {
+      return {
+        ok: false,
+        error:
+          "An address can use lowercase letters, numbers and single hyphens, and must start and end with a letter or number. “unn” or “uni-lag”, not “UNN Chapter”.",
+      };
+    }
+  }
+
+  /* What was live before, so an address that is being renamed or switched off
+     can be released rather than left answering forever. */
+  const { data: before } = await db
+    .from("chapters")
+    .select("subdomain,site_enabled")
+    .eq("id", id)
+    .maybeSingle();
+
+  const { error } = await db
+    .from("chapters")
+    .update({ subdomain: raw || null, site_enabled: enabled })
+    .eq("id", id);
+
+  if (error) {
+    if (error.code === "23505") {
+      return { ok: false, error: `${raw} is already taken by another chapter.` };
+    }
+    /* The reserved-name trigger raises a plain exception. */
+    if (/reserved/i.test(error.message)) {
+      return { ok: false, error: `“${raw}” is reserved for the main site. Try something else.` };
+    }
+    return { ok: false, error: error.message };
+  }
+
+  await db.from("audit_log").insert({
+    actor_id: me.id,
+    action: enabled ? "campus_site_enabled" : "campus_site_disabled",
+    entity_type: "chapters",
+    entity_id: id,
+    diff: { subdomain: raw || null, site_enabled: enabled },
+  });
+
+  revalidatePath("/dashboard/chapters");
+
+  const apex = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://aaci.ngo")
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/\/$/, "");
+
+  /* Release the previous address when it is no longer the live one — a rename
+     from `unn` to `unn-nsukka` otherwise leaves the old one serving the site
+     forever, which is confusing and quietly splits the chapter's search
+     ranking across two hostnames. */
+  const was = before?.site_enabled === true ? (before.subdomain as string | null) : null;
+  const now = enabled ? raw : null;
+  if (was && was !== now) {
+    await releaseHost(`${was}.${apex}`);
+  }
+
+  if (!now) {
+    return {
+      ok: true,
+      message: raw
+        ? "Address saved. The site is switched off until you turn it on."
+        : "Address cleared.",
+    };
+  }
+
+  const host = `${now}.${apex}`;
+  const claimed = await claimHost(host);
+
+  if (!claimed.attempted) {
+    return {
+      ok: true,
+      message: `Saved. ${host} will work once an admin adds it to the hosting account — this deployment has no hosting token, so it cannot do that itself.`,
+    };
+  }
+  if (!claimed.ok) {
+    /* The decision is recorded; only the outside step failed. Say which. */
+    return {
+      ok: true,
+      message: `Saved, but ${host} is not live yet: ${claimed.error}`,
+    };
+  }
+
+  return {
+    ok: true,
+    message: claimed.note ? `Live at ${host}. ${claimed.note}` : `Live at ${host}.`,
+  };
+}
+
 export async function deleteChapter(id: string): Promise<Result> {
   const db = await createClient();
   const me = await getProfile();
@@ -143,8 +273,24 @@ export async function deleteChapter(id: string): Promise<Result> {
     };
   }
 
+  /* Read the address before the row goes, so a deleted chapter does not leave
+     a hostname on the hosting account answering for nothing. */
+  const { data: doomed } = await db
+    .from("chapters")
+    .select("subdomain,site_enabled")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await db.from("chapters").delete().eq("id", id);
   if (error) return { ok: false, error: error.message };
+
+  if (doomed?.subdomain) {
+    const apex = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://aaci.ngo")
+      .replace(/^https?:\/\//, "")
+      .replace(/^www\./, "")
+      .replace(/\/$/, "");
+    await releaseHost(`${doomed.subdomain}.${apex}`);
+  }
 
   await db.from("audit_log").insert({
     actor_id: me.id,

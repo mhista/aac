@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -67,6 +67,19 @@ export function PostEditor({
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [tab, setTab] = useState<"write" | "preview">("write");
   const [body, setBody] = useState(post.body ?? "");
+
+  /* Same guard as the event editor. The fields here do not unmount — this is
+     one form and the body lives in state — but an article is the longest thing
+     anyone writes in this dashboard, so losing it to a closed tab is the worst
+     possible outcome. */
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
   const [cover, setCover] = useState(post.cover?.url ?? "");
   const [note, setNote] = useState("");
   const [armed, setArmed] = useState(false);
@@ -78,7 +91,10 @@ export function PostEditor({
     start(async () => {
       const res = await fn();
       if (res && !res.ok) setMsg({ ok: false, text: res.error ?? "That did not work." });
-      else if (res && res.message) setMsg({ ok: true, text: res.message });
+      else {
+        if (res && res.message) setMsg({ ok: true, text: res.message });
+        setDirty(false);
+      }
       router.refresh();
     });
 
@@ -128,6 +144,7 @@ export function PostEditor({
           fd.set("cover_url", cover);
           run(() => savePost(post.id, fd));
         }}
+        onInput={() => setDirty(true)}
         className="space-y-5"
       >
         <fieldset disabled={readOnly} className="space-y-5">
@@ -307,6 +324,11 @@ export function PostEditor({
             <button type="submit" disabled={pending} className={BTN.primary}>
               {pending ? "Saving…" : "Save"}
             </button>
+            {dirty && (
+              <span className="mono self-center text-[var(--color-feedback-warning-text)]">
+                Unsaved changes
+              </span>
+            )}
             {!isPublic && (
               <button
                 type="button"

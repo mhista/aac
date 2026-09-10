@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
+import { createClient, CONFIG_ERROR } from "@/lib/supabase/client";
 import { ArrowRight } from "@/components/ui/Icon";
 import { ORG } from "@/lib/org";
 
@@ -55,7 +55,9 @@ export function LoginForm() {
     e.preventDefault();
     setVerifying(true);
     setError(null);
+
     const db = createClient();
+    if (!db) { setVerifying(false); setError(CONFIG_ERROR); return; }
     const { error } = await db.auth.verifyOtp({
       email: email.trim(),
       token: code.trim(),
@@ -71,7 +73,10 @@ export function LoginForm() {
     e.preventDefault();
     setState("sending");
     setError(null);
+
     const db = createClient();
+    /* Unconfigured build. Say so rather than sitting on "Working…" for ever. */
+    if (!db) { setError(CONFIG_ERROR); setState("error"); return; }
 
     if (mode === "link") {
       const { error } = await db.auth.signInWithOtp({

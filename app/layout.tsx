@@ -8,10 +8,12 @@ import { ScrollTop } from "@/components/ui/ScrollTop";
 import { ORG } from "@/lib/org";
 import { JsonLd, organizationLd, websiteLd, SITE } from "@/lib/seo";
 import { getPublicSettings } from "@/lib/cms/public-settings";
+import { CampusBar } from "@/components/ui/CampusBar";
+import { getCampus, originFor } from "@/lib/site/campus";
 
 
 
-export const metadata: Metadata = {
+const BASE: Metadata = {
   metadataBase: new URL(SITE),
   title: {
     default: `${ORG.name} — ${ORG.tagline}`,
@@ -58,6 +60,36 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false },
 };
 
+/**
+ * A campus subdomain is a site in its own right, so it gets its own title,
+ * its own canonical URL and its own social card.
+ *
+ * The canonical is the part that actually matters. Forty chapter sites all
+ * declaring aaci.ngo as canonical would tell Google they are duplicates of the
+ * national site and should not be indexed — which is the opposite of why the
+ * chapters wanted sites.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const campus = await getCampus();
+  if (!campus) return BASE;
+
+  const origin = originFor(campus.subdomain, SITE);
+  const title = `${campus.name} — ${ORG.abbr}`;
+  const description =
+    campus.lede ??
+    `The ${campus.name} chapter of ${ORG.name}${campus.city ? `, ${campus.city}` : ""}. ${ORG.tagline}.`;
+
+  return {
+    ...BASE,
+    metadataBase: new URL(origin),
+    title: { default: title, template: `%s · ${campus.name}` },
+    description,
+    alternates: { canonical: origin },
+    openGraph: { ...BASE.openGraph, title, description, url: origin, siteName: campus.name },
+    twitter: { ...BASE.twitter, title, description },
+  };
+}
+
 export const viewport: Viewport = {
   themeColor: "#1E0B45",
   width: "device-width",
@@ -84,6 +116,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <SmoothScroll />
         {/* Public chrome only. The dashboard is a tool, not a marketing page. */}
         <ChromeGate>
+          <CampusBar />
           <Nav />
         </ChromeGate>
         <main id="main" tabIndex={-1}>{children}</main>

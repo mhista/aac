@@ -40,6 +40,7 @@ const NAV: NavGroup[] = [
     group: "People",
     items: [
       { label: "Chapters", href: "/dashboard/chapters", area: "chapters" },
+      { label: "Chapter executives", href: "/dashboard/executives", area: "campusTeam" },
       { label: "Advocates", href: "/dashboard/people", area: "advocates" },
       { label: "Applications", href: "/dashboard/applications", area: "applications" },
       { label: "Impact reports", href: "/dashboard/impact-reports", area: "impactReports" },
@@ -79,7 +80,9 @@ export function DashboardShell({
     .filter((g) => g.items.length > 0);
 
   async function signOut() {
-    await createClient().auth.signOut();
+    /* If the build has no Supabase keys there is no session to end; still
+       send them out of the dashboard rather than doing nothing. */
+    await createClient()?.auth.signOut();
     router.push("/login");
     router.refresh();
   }

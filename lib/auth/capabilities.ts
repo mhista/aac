@@ -22,7 +22,7 @@ import { RANK, type Profile, type Role } from "./permissions";
 export type Area =
   | "events" | "blog" | "media" | "programmes" | "pages"
   | "chapters" | "advocates" | "applications" | "impactReports"
-  | "impactMetrics" | "team" | "enquiries"
+  | "impactMetrics" | "team" | "campusTeam" | "enquiries"
   | "users" | "settings" | "audit";
 
 type Grant = {
@@ -65,6 +65,12 @@ export const CAPABILITIES: Record<Area, Grant> = {
      the board list or the headline impact figures. This is the gap that
      let that happen. */
   team: { read: [...DIRECTORS, "board_member"], write: DIRECTORS, remove: ADMIN },
+
+  /* A chapter's own committee is not governance. It changes every academic
+     year, it is the coordinator's to keep current, and it appears on that
+     chapter's site rather than on the About page. Scoped, so a coordinator
+     reaches their own and nobody else's. */
+  campusTeam: { read: [...CAMPUS, "board_member"], write: CAMPUS, remove: CAMPUS, scoped: true },
   impactMetrics: { read: ALL_STAFF, write: DIRECTORS, remove: ADMIN },
 
   /* ── The network ────────────────────────────────────────────────── */

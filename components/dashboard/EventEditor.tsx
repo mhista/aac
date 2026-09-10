@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import clsx from "clsx";
@@ -56,14 +56,29 @@ export function EventEditor({
   const [pending, start] = useTransition();
   const [msg, setMsg] = useState<{ tone: "success" | "danger"; text: string } | null>(null);
 
+  /* Typed-but-unsaved. Shown next to Save, and guarded on unload — the people
+     using this are often on a phone with a dying battery, and losing a recap
+     they spent ten minutes writing is the worst thing this screen can do. */
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [dirty]);
+
   const readOnly = event.status === "in_review" && !canPublishNow;
 
   function run(fn: () => Promise<{ ok: boolean; error?: string }>, success: string) {
     setMsg(null);
     start(async () => {
       const r = await fn();
-      if (r.ok) { setMsg({ tone: "success", text: success }); router.refresh(); }
-      else setMsg({ tone: "danger", text: r.error ?? "Something went wrong." });
+      if (r.ok) {
+        setMsg({ tone: "success", text: success });
+        setDirty(false);
+        router.refresh();
+      } else setMsg({ tone: "danger", text: r.error ?? "Something went wrong." });
     });
   }
 
@@ -147,13 +162,38 @@ export function EventEditor({
         </div>
       )}
 
-      <div className="rounded-dash-md border border-[var(--color-border-default)] bg-white p-5 md:p-7">
+      {/*
+        ONE form, and every field stays mounted whichever step is showing.
+
+        This used to be four separate panels, each rendered with `{step === n &&
+        …}`. Two things went wrong, and together they wiped drafts:
+
+        1. Switching step UNMOUNTED the panel. Every field is uncontrolled
+           (defaultValue), so anything typed and not yet saved was destroyed —
+           and "Next: photographs" did not save first.
+        2. Each panel carried the other panel's values as hidden inputs read
+           from the SERVER row. So saving the recap wrote `title` back as
+           "Untitled event" if a title had been typed but not saved. The editor
+           reverted work rather than merely losing it.
+
+        Hiding instead of unmounting fixes the first. Having one form with the
+        real fields — no mirrors — fixes the second: the save always sends what
+        is actually on screen.
+
+        `hidden` is the attribute, not the Tailwind class, and these panels
+        carry no display utility. A `flex` or `grid` class on the same element
+        would beat `[hidden]` and the panel would stay visible.
+      */}
+      <form
+        action={(fd) => run(() => saveEvent(event.id, fd), "Saved.")}
+        onInput={() => setDirty(true)}
+        className="rounded-dash-md border border-[var(--color-border-default)] bg-white p-5 md:p-7"
+      >
+        {/* Submitted from every step, so the slug is never dropped. */}
+        <input type="hidden" name="slug" value={event.slug} />
+
         {/* ── 01 Details ───────────────────────────────────────────── */}
-        {step === 0 && (
-          <form
-            action={(fd) => run(() => saveEvent(event.id, fd), "Details saved.")}
-            className="space-y-5"
-          >
+        <div hidden={step !== 0} className="space-y-5">
             <Field label="Title" required htmlFor="title" hint="What would you call this if you were telling someone about it?">
               <input id="title" name="title" defaultValue={event.title === "Untitled event" ? "" : event.title}
                      className={inputCls} disabled={readOnly} placeholder="Cervical cancer screening at UNN" />
@@ -210,36 +250,10 @@ export function EventEditor({
               </Field>
             </div>
 
-            {/* Carried so the save action does not blank them out */}
-            <input type="hidden" name="body" value={event.body ?? ""} />
-            <input type="hidden" name="slug" value={event.slug} />
-
-            <div className="flex flex-wrap gap-3 pt-2">
-              <button type="submit" className={BTN.primary} disabled={pending || readOnly}>
-                {pending ? "Saving…" : "Save details"}
-              </button>
-              <button type="button" onClick={() => setStep(1)} className={BTN.secondary}>
-                Next: photographs <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </form>
-        )}
-
-        {/* ── 02 Photographs ───────────────────────────────────────── */}
-        {step === 1 && (
-          <PhotosStep
-            eventId={event.id}
-            photos={photos}
-            readOnly={readOnly}
-            pending={pending}
-            run={run}
-            onNext={() => setStep(2)}
-          />
-        )}
+        </div>
 
         {/* ── 03 Recap ─────────────────────────────────────────────── */}
-        {step === 2 && (
-          <form action={(fd) => run(() => saveEvent(event.id, fd), "Recap saved.")} className="space-y-5">
+        <div hidden={step !== 2} className="space-y-5">
             <Field
               label="What happened"
               required
@@ -257,30 +271,55 @@ export function EventEditor({
               />
             </Field>
 
-            {/* Carried so this save does not blank the details */}
-            {(["title","subtitle","event_type","venue","city","country","slug"] as const).map((k) => (
-              <input key={k} type="hidden" name={k} value={(event[k] as string) ?? ""} />
-            ))}
-            {(["attendance","screenings_done","materials_distributed"] as const).map((k) => (
-              <input key={k} type="hidden" name={k} value={event[k] ?? ""} />
-            ))}
-            <input type="hidden" name="starts_at" value={toLocalInput(event.starts_at)} />
-            <input type="hidden" name="ends_at" value={toLocalInput(event.ends_at)} />
+        </div>
 
-            <div className="flex flex-wrap gap-3 pt-2">
-              <button type="submit" className={BTN.primary} disabled={pending || readOnly}>
-                {pending ? "Saving…" : "Save recap"}
-              </button>
-              <button type="button" onClick={() => setStep(3)} className={BTN.secondary}>
-                Next: submit <ArrowRight className="h-4 w-4" />
-              </button>
-            </div>
-          </form>
+        {/* One save, whichever editing step is showing, because one form now
+           holds every field. Steps 02 and 04 have nothing to save. */}
+        {(step === 0 || step === 2) && (
+          <div className="mt-6 flex flex-wrap items-center gap-3 border-t border-[var(--color-border-subtle)] pt-6">
+            <button type="submit" className={BTN.primary} disabled={pending || readOnly}>
+              {pending ? "Saving…" : "Save"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setStep(step === 0 ? 1 : 3)}
+              className={BTN.secondary}
+            >
+              {step === 0 ? "Next: photographs" : "Next: submit"} <ArrowRight className="h-4 w-4" />
+            </button>
+            {dirty && (
+              <span className="mono text-[var(--color-feedback-warning-text)]">
+                Unsaved changes
+              </span>
+            )}
+          </div>
         )}
+      </form>
 
-        {/* ── 04 Submit ────────────────────────────────────────────── */}
-        {step === 3 && (
-          <div className="space-y-6">
+      {/* ── 02 Photographs ─────────────────────────────────────────
+         Outside the form: it has its own per-photograph actions, and nesting
+         them inside would submit stray fields to the event save. Kept mounted
+         so half-typed alt text survives a step change too. */}
+      <div
+        hidden={step !== 1}
+        className="rounded-dash-md border border-[var(--color-border-default)] bg-white p-5 md:p-7"
+      >
+        <PhotosStep
+          eventId={event.id}
+          photos={photos}
+          readOnly={readOnly}
+          pending={pending}
+          run={run}
+          onNext={() => setStep(2)}
+        />
+      </div>
+
+      {/* ── 04 Submit ────────────────────────────────────────────── */}
+      <div
+        hidden={step !== 3}
+        className="rounded-dash-md border border-[var(--color-border-default)] bg-white p-5 md:p-7"
+      >
+        <div className="space-y-6">
             <div>
               <h2 className="font-display text-[1.35rem] text-[var(--color-text-display)]">Ready to go?</h2>
               <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
@@ -347,7 +386,6 @@ export function EventEditor({
               </button>
             </div>
           </div>
-        )}
       </div>
 
       <DangerZone event={event} canDeletePublished={canPublishNow} />
