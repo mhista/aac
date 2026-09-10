@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Img } from "@/components/media/Img";
 import { Reveal } from "@/components/motion/Reveal";
 import { Empty } from "@/components/ui/Empty";
-import type { EventRecord } from "@/lib/cms";
+import type { EventRecord, ArchiveEntry } from "@/lib/cms";
 import { ArrowRight } from "@/components/ui/Icon";
 
 function dateRange(a: string | null, b: string | null) {
@@ -11,9 +11,25 @@ function dateRange(a: string | null, b: string | null) {
   return b && b !== a ? `${f(a)} → ${f(b)}` : f(a);
 }
 
-export function EventCard({ e, index }: { e: EventRecord; index?: number }) {
+/**
+ * One card, two kinds of thing.
+ *
+ * The Events page lists past events and finished programmes together, because
+ * a reader looking for "what has AAC actually done" does not care which table
+ * a row came from. `href` is passed rather than assumed so a programme card
+ * links to its own page; the type badge tells you which you are looking at.
+ */
+export function EventCard({
+  e,
+  index,
+  href,
+}: {
+  e: EventRecord;
+  index?: number;
+  href?: string;
+}) {
   return (
-    <Link href={`/events/${e.slug}`} className="group block">
+    <Link href={href ?? `/events/${e.slug}`} className="group block">
       <div className="relative overflow-hidden rounded-lg">
         <Img
           src={e.cover?.url ?? "outreach-health-post"}
@@ -44,7 +60,7 @@ export function EventCard({ e, index }: { e: EventRecord; index?: number }) {
   );
 }
 
-export function EventsPreview({ events }: { events: EventRecord[] }) {
+export function EventsPreview({ events }: { events: (EventRecord | ArchiveEntry)[] }) {
   return (
     <section className="section bg-[var(--color-surface-page-alt)]">
       <div className="wrap">
@@ -78,7 +94,7 @@ export function EventsPreview({ events }: { events: EventRecord[] }) {
             <div className="grid gap-10 md:grid-cols-2 md:gap-x-8 md:gap-y-14">
               {events.map((e, i) => (
                 <Reveal key={e.id} delay={(i % 2) * 0.08}>
-                  <EventCard e={e} index={i} />
+                  <EventCard e={e} index={i} href={"href" in e ? e.href : undefined} />
                 </Reveal>
               ))}
             </div>

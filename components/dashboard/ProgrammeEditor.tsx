@@ -70,6 +70,9 @@ export function ProgrammeEditor({
     });
 
   const live = programme.status === "published";
+  /* Derived, never stored — the day after the end date it is simply true, with
+     nothing to run on a schedule and nothing for anyone to remember. */
+  const ended = !!programme.end_date && programme.end_date < new Date().toISOString().slice(0, 10);
 
   return (
     <div className="mx-auto max-w-[880px]">
@@ -162,7 +165,11 @@ export function ProgrammeEditor({
             <input id="p-start" name="start_date" type="date" defaultValue={programme.start_date ?? ""} className={inputCls} />
           </Field>
 
-          <Field label="Ends" htmlFor="p-end" hint="Leave blank if it is ongoing.">
+          <Field
+            label="Ends"
+            htmlFor="p-end"
+            hint="Leave blank if it is ongoing. Once this date passes, the programme also appears on the Events page under “What we have done”."
+          >
             <input id="p-end" name="end_date" type="date" defaultValue={programme.end_date ?? ""} className={inputCls} />
           </Field>
 
@@ -249,6 +256,16 @@ export function ProgrammeEditor({
               ? "Publishing puts it on the public site straight away."
               : "Send it for review and a coordinator will publish it."}
         </p>
+
+        {live && ended && (
+          <div className="mb-4">
+            <Notice tone="info" title="This programme has finished">
+              It is now listed on the Events page as well, under “What we have done”, and links back
+              to this page. There is no second copy to keep up to date — editing it here changes it
+              everywhere.
+            </Notice>
+          </div>
+        )}
 
         <div className="flex flex-wrap gap-3">
           {!live && canPublishNow && (

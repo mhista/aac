@@ -8,7 +8,7 @@ import { Values } from "@/components/sections/Values";
 import { CtaBand } from "@/components/sections/CtaBand";
 import { PostsPreview } from "@/components/sections/PostsPreview";
 import { Leadership } from "@/components/sections/Leadership";
-import { getEvents, getPosts, getImpactMetrics, getChapters, getPageSections, getTeam } from "@/lib/cms";
+import { getRecentWork, getPosts, getImpactMetrics, getChapters, getPageSections, getTeam } from "@/lib/cms";
 import { getCampus } from "@/lib/site/campus";
 import { ORG } from "@/lib/org";
 
@@ -21,7 +21,7 @@ export default async function HomePage() {
      executives, without a single call here changing. */
   const [campus, events, posts, metrics, chapters, sections, team] = await Promise.all([
     getCampus(),
-    getEvents({ limit: 4 }),
+    getRecentWork(4),
     getPosts({ limit: 3 }),
     getImpactMetrics(),
     getChapters(),

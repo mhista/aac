@@ -269,6 +269,122 @@ export async function getProgrammes(opts: { limit?: number; pillar?: string } = 
   );
 }
 
+/**
+ * The archive: everything that has happened, in one list.
+ *
+ * A programme that has finished belongs on the Events page. It is a thing AAC
+ * did, and leaving it only on /programmes — where the reader expects work that
+ * is currently running — means the record of it quietly ages into looking
+ * like a stale page rather than a completed piece of work.
+ *
+ * NOTHING IS COPIED, and that is the important part. It would have been
+ * quicker to write an event row when a programme ends, and it would have been
+ * wrong: two records of the same thing, edited in one place, stale in the
+ * other, and nobody able to say which is real. The same objection that rules
+ * out cross-posting a chapter's event to the main site rules this out. So the
+ * programme stays one row with one editor, and the archive is a query that
+ * reads both tables.
+ *
+ * "Ended" is derived from the end date, not stored. Nothing has to run on a
+ * schedule and nobody has to remember to flip a switch — the day after a
+ * programme's end date, it is in the archive. A programme with no end date is
+ * ongoing by definition and stays out of it.
+ */
+export type ArchiveEntry = EventRecord & { kind: "event" | "programme"; href: string };
+
+export async function getEndedProgrammes(limit?: number): Promise<ArchiveEntry[]> {
+  const today = new Date().toISOString().slice(0, 10);
+
+  const rows = await safe<any[]>(
+    async (db) => {
+      const q = await scope(
+        db
+          .from("programmes")
+          .select("id,slug,title,subtitle,excerpt,cover,start_date,end_date,locations,actual_reach")
+          .eq(PUBLISHED.column, PUBLISHED.value)
+          .not("end_date", "is", null)
+          .lt("end_date", today)
+          .order("end_date", { ascending: false })
+      );
+      return await (limit ? q.limit(limit) : q);
+    },
+    [],
+    "ended programmes"
+  );
+
+  return rows.map((p) => ({
+    id: p.id,
+    slug: p.slug,
+    title: p.title,
+    subtitle: p.subtitle ?? p.excerpt ?? null,
+    /* The badge on the card. A reader should be able to tell at a glance that
+       this ran for months rather than an afternoon. */
+    event_type: "Programme",
+    cover: p.cover ?? null,
+    starts_at: p.start_date ?? null,
+    ends_at: p.end_date ?? null,
+    venue: null,
+    city: (p.locations ?? [])[0] ?? null,
+    country: (p.locations ?? []).length > 1 ? `${(p.locations as string[]).length} locations` : null,
+    attendance: p.actual_reach ?? null,
+    display_index: null,
+    kind: "programme" as const,
+    href: `/programmes/${p.slug}`,
+  }));
+}
+
+/**
+ * Past events and finished programmes, newest first.
+ *
+ * Sorted on whichever date the entry actually ended, so a programme that ran
+ * from March to August sits with August rather than March.
+ */
+export async function getArchive(limit?: number): Promise<ArchiveEntry[]> {
+  const [events, programmes] = await Promise.all([
+    getEvents({ upcoming: false }),
+    getEndedProgrammes(),
+  ]);
+
+  const merged: ArchiveEntry[] = [
+    ...events.map((e) => ({ ...e, kind: "event" as const, href: `/events/${e.slug}` })),
+    ...programmes,
+  ];
+
+  const when = (e: ArchiveEntry) => {
+    const d = e.ends_at ?? e.starts_at;
+    const t = d ? Date.parse(d) : NaN;
+    /* Undated entries sort last rather than to 1970. */
+    return Number.isNaN(t) ? -Infinity : t;
+  };
+
+  merged.sort((a, b) => when(b) - when(a));
+  return limit ? merged.slice(0, limit) : merged;
+}
+
+/**
+ * The homepage preview: the most recent work, whatever kind it is.
+ *
+ * Same rule as the Events page, so the two never disagree about what AAC has
+ * been doing. Upcoming events are included — on the front page, something
+ * happening next month is the most interesting row there is.
+ */
+export async function getRecentWork(limit = 4): Promise<ArchiveEntry[]> {
+  const [events, programmes] = await Promise.all([getEvents(), getEndedProgrammes()]);
+
+  const merged: ArchiveEntry[] = [
+    ...events.map((e) => ({ ...e, kind: "event" as const, href: `/events/${e.slug}` })),
+    ...programmes,
+  ];
+
+  const when = (e: ArchiveEntry) => {
+    const t = e.starts_at ? Date.parse(e.starts_at) : NaN;
+    return Number.isNaN(t) ? -Infinity : t;
+  };
+
+  merged.sort((a, b) => when(b) - when(a));
+  return merged.slice(0, limit);
+}
+
 export async function getProgramme(slug: string): Promise<ProgrammeRecord | null> {
   const rows = await safe<ProgrammeRecord[]>(
     async (db) =>

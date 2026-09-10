@@ -143,6 +143,7 @@ editor. They are written to be re-runnable.
 | `012` | Leadership section on the homepage |
 | `013` | **Campus sites** — subdomains, per-chapter content scoping, campus executives |
 | `014` | **Advocates** — matches the Google Forms question for question |
+| `015` | **Impact reports** — chapter-scoped, and verification separated from editing |
 
 ### Roles
 
@@ -247,10 +248,23 @@ it.
 
 ---
 
+## Where the impact figures come from
+
+`impact_reports` is the evidence layer. A chapter files what it did; a
+coordinator above them verifies it; only verified reports count towards the
+numbers on the public site. The dashboard shows the verified total and the
+unverified total side by side and never adds them together — the gap between
+"what we can evidence" and "what has been claimed" is the thing an
+organisation publishing impact figures has to keep in view.
+
+Verifying is separated from editing at the database level: you cannot verify
+your own report below regional level, and a verified report's reach cannot be
+edited in place without reopening it first.
+
 ## Still to build
 
-Impact reports · the Groq chat assistant · a vector logo (SVG/EPS) ·
-the volunteer handbook reissued without the legacy name.
+The Groq chat assistant · a vector logo (SVG/EPS) · the volunteer handbook
+reissued without the legacy name.
 
 ---
 
