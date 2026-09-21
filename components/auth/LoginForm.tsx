@@ -10,9 +10,16 @@ import { ORG } from "@/lib/org";
 /**
  * Sign in.
  *
- * Magic link by default — no password to forget, reuse or leak, which matters
- * when the people signing in are 40+ campus coordinators rather than engineers.
- * Password sign-in is offered as a fallback for accounts that have one set.
+ * A six-digit code by default — no password to forget, reuse or leak, which
+ * matters when the people signing in are 40+ campus coordinators rather than
+ * engineers. The same email carries a one-click link as well, but the code is
+ * what the screen asks for, because a link is single-use and mail scanners
+ * routinely spend it before the recipient clicks.
+ *
+ * Both come from one Supabase call. The code only appears in the email if the
+ * template prints {{ .Token }} — see supabase/templates/.
+ *
+ * Password sign-in stays as a fallback for accounts that have one set.
  */
 /**
  * Why a sign-in attempt bounced. Each of these needs a different action from
@@ -108,17 +115,24 @@ export function LoginForm() {
         {state === "sent" ? (
           <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] p-8">
             <p className="mono mb-4">Check your email</p>
-            <h1 className="display text-[1.75rem]">We have sent you a link.</h1>
+            <h1 className="display text-[1.75rem]">Enter the code we sent.</h1>
             <p className="mt-4 text-body leading-body text-[var(--color-text-secondary)]">
-              Open the email we just sent to <strong className="text-[var(--color-text-primary)]">{email}</strong> and
-              click the link to sign in. It expires in an hour.
+              We have emailed a six-digit code to{" "}
+              <strong className="text-[var(--color-text-primary)]">{email}</strong>. Type it below.
+              It expires in an hour.
             </p>
 
-            {/* The typed code is the reliable path: a link can be consumed by
-                a mail scanner or opened in the wrong browser, a code cannot. */}
-            <form onSubmit={onVerifyCode} className="mt-6 border-t border-[var(--color-border-subtle)] pt-6">
+            {/* The typed code leads, and the link is the afterthought, because
+                that is the order of their reliability. A magic link is
+                single-use and mail scanners open every URL in a message before
+                the recipient does — so the link is frequently spent before it
+                is clicked, which is the "expired link" this project kept
+                hitting. A code cannot be consumed by a scanner, does not care
+                which browser the email was opened in, and needs no PKCE
+                verifier cookie. */}
+            <form onSubmit={onVerifyCode} className="mt-6">
               <label htmlFor="otp" className="mono mb-2 block">
-                Or enter the six-digit code from that email
+                Six-digit code
               </label>
               <div className="flex gap-2">
                 <input
@@ -150,8 +164,14 @@ export function LoginForm() {
               )}
             </form>
 
+            <p className="mt-6 border-t border-[var(--color-border-subtle)] pt-5 text-caption leading-body text-[var(--color-text-secondary)]">
+              The same email also has a one-click link, if you would rather use that. If it says it
+              has expired, use the code — scanners sometimes open links before you do, which uses
+              them up.
+            </p>
+
             <p className="mt-4 text-caption text-[var(--color-text-secondary)]">
-              Nothing arrived? Check spam, then{" "}
+              No code in the email? Check spam, then{" "}
               <button
                 type="button"
                 onClick={() => setState("idle")}
@@ -227,7 +247,7 @@ export function LoginForm() {
               onClick={() => { setMode(mode === "link" ? "password" : "link"); setError(null); }}
               className="mono mt-6 underline underline-offset-4"
             >
-              {mode === "link" ? "Use a password instead" : "Email me a link instead"}
+              {mode === "link" ? "Use a password instead" : "Email me a code instead"}
             </button>
           </div>
         )}

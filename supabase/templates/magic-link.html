@@ -1,0 +1,89 @@
+<!--
+  AAC — sign-in email (Magic Link / OTP template)
+
+  WHERE THIS GOES
+  Supabase dashboard → Authentication → Emails → "Magic Link".
+  Paste the whole thing into the message body. Subject: Your AAC sign-in code
+
+  WHY IT EXISTS
+  Supabase generates a six-digit code for every sign-in request whether you
+  ask for one or not — but the default template only prints
+  {{ .ConfirmationURL }}, so the code is created and then thrown away unseen.
+  That is why only the link was arriving. Adding {{ .Token }} is the whole fix.
+
+  THE CODE COMES FIRST, deliberately. A link in an email is fragile in ways a
+  code is not: corporate and webmail scanners fetch every URL in a message
+  before the recipient sees it, and a magic link is single-use, so by the time
+  the coordinator clicks it, it has already been spent — which is exactly the
+  "email link is invalid or has expired" this project kept hitting. A typed
+  code cannot be consumed by a scanner and does not care which browser or
+  device the email was opened on.
+
+  Tables and inline styles because this is email, not a web page. Outlook
+  renders neither flexbox nor a stylesheet.
+-->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="background:#FAF8F4;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <tr>
+    <td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+             style="max-width:520px;background:#ffffff;border-radius:12px;border:1px solid #E7E2D8;">
+
+        <tr>
+          <td style="padding:32px 32px 0 32px;">
+            <p style="margin:0;font-size:12px;letter-spacing:0.08em;text-transform:uppercase;color:#6B6459;">
+              All Against Cancer Initiative
+            </p>
+            <h1 style="margin:16px 0 0 0;font-size:24px;line-height:1.25;color:#2A0F5B;font-weight:600;">
+              Your sign-in code
+            </h1>
+            <p style="margin:12px 0 0 0;font-size:15px;line-height:1.6;color:#4A443D;">
+              Enter this code on the sign-in page. It expires in one hour and can only be used once.
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:24px 32px 0 32px;">
+            <div style="background:#EFE8FD;border-radius:10px;padding:24px;text-align:center;">
+              <div style="font-family:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;font-size:34px;font-weight:700;letter-spacing:0.28em;color:#4E23A0;">
+                {{ .Token }}
+              </div>
+            </div>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:24px 32px 0 32px;">
+            <p style="margin:0;font-size:14px;line-height:1.6;color:#6B6459;">
+              Or sign in with one click:
+            </p>
+            <p style="margin:12px 0 0 0;">
+              <a href="{{ .ConfirmationURL }}"
+                 style="display:inline-block;background:#4E23A0;color:#ffffff;text-decoration:none;font-size:15px;font-weight:500;padding:12px 24px;border-radius:999px;">
+                Sign in to the dashboard
+              </a>
+            </p>
+            <p style="margin:12px 0 0 0;font-size:13px;line-height:1.6;color:#8A8377;">
+              If the link says it has expired, use the code above instead — email security
+              scanners sometimes open links before you do, which uses them up.
+            </p>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:24px 32px 32px 32px;border-top:1px solid #F3F0EA;margin-top:24px;">
+            <p style="margin:24px 0 0 0;font-size:13px;line-height:1.6;color:#8A8377;">
+              If you did not ask to sign in, you can ignore this email — nothing happens
+              until the code or the link is used.
+            </p>
+            <p style="margin:12px 0 0 0;font-size:13px;line-height:1.6;color:#8A8377;">
+              All Against Cancer Initiative · contact@aaci.ngo
+            </p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>

@@ -159,6 +159,28 @@ is needed locally — only the database row matters.
 
 ---
 
+## 4c · Sign-in emails (the six-digit code)
+
+Supabase generates a code for every sign-in request, but the stock email
+template prints only the link — so the code is created and never shown. Paste
+the two templates in `supabase/templates/` into **Authentication → Emails**:
+
+| File | Template |
+|---|---|
+| `magic-link.html` | **Magic Link** |
+| `confirm-signup.html` | **Confirm signup** |
+
+> **Do both.** Supabase sends *Magic Link* to someone who already has an
+> account and *Confirm signup* to someone signing in for the first time — which
+> here is every newly invited coordinator. Fixing only the first looks like it
+> worked when you test it on yourself, and fails for the next new person.
+
+While you are in there: Supabase's built-in SMTP is rate-limited and not meant
+for production. With 40+ coordinators, set **Custom SMTP** to Zoho — the domain
+already sends through it — or invitation emails will start failing quietly.
+
+---
+
 ## 5 · After that
 
 Every `git push` to `main` deploys automatically. Every pull request gets its own
