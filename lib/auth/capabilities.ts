@@ -23,7 +23,7 @@ export type Area =
   | "events" | "blog" | "media" | "programmes" | "pages"
   | "chapters" | "advocates" | "applications" | "impactReports"
   | "impactMetrics" | "team" | "campusTeam" | "enquiries"
-  | "users" | "settings" | "audit";
+  | "users" | "settings" | "audit" | "insights";
 
 type Grant = {
   /** Who may open the section at all. */
@@ -90,6 +90,11 @@ export const CAPABILITIES: Record<Area, Grant> = {
   users: { read: ADMIN, write: ADMIN, remove: ADMIN },
   settings: { read: [...ADMIN, "board_member"], write: ADMIN, remove: ADMIN },
   audit: { read: [...ADMIN, "board_member"], write: [], remove: [] },
+  /* Read-only figures. Everyone who leads part of the organisation, at any
+     level, sees the part they lead (lib/insights.ts narrows it); content
+     leads and board members see the whole. There is no table behind this —
+     the rows it counts are each protected by their own table's RLS. */
+  insights: { read: [...CAMPUS, "content_lead", "board_member"], write: [], remove: [] },
 };
 
 const active = (p?: Profile | null) => !!p && p.status === "active";

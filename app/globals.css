@@ -321,3 +321,8 @@
 
 .dash-ui table thead th{background:var(--dash-thead)}
 .dash-ui tbody tr:hover{background:var(--dash-row-hover)}
+
+/* Chart series colour: AAC violet, one step lighter on dark so it keeps 3:1
+   against the card. Both checked with the dataviz palette validator. */
+.dash-ui{--chart-1:#6C3CC0}
+.dash-ui.dash-dark{--chart-1:#9463EA}
