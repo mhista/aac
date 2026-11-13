@@ -71,6 +71,8 @@ export interface ProgrammeRecord {
   cover: MediaRef | null;
   status_label: string | null;
   locations: string[] | null;
+  /* Only loaded by getProgramme, which selects every column. */
+  body?: string | null;
 }
 
 export interface TeamMember {
@@ -169,12 +171,24 @@ const PUBLISHED = { column: "status", value: "published" } as const;
    the database still does the paging — `limit(4)` has to mean four rows we
    will actually show, not four rows we might throw away.                */
 
-async function scope<T>(q: T): Promise<T> {
+/* THE BUILDER IS RETURNED IN A BOX, AND THAT IS LOAD-BEARING. A Supabase
+   query builder is a thenable — it has a `.then` that runs the query. An
+   async function that returns a thenable resolves to the *result* of calling
+   it, so `await scope(q)` used to execute the query on the spot and hand back
+   `{ data, error }`. Anything chained afterwards (`.limit(1)`, `.order(...)`)
+   then threw, `safe()` swallowed the error, and the query came back empty —
+   which is why every article page answered 404 while the blog index, which
+   chains nothing, listed the article fine. Wrapping the builder in `{ q }`
+   means awaiting the box cannot run it.                                   */
+
+async function scope<T>(q: T): Promise<{ q: T }> {
   const chapter = await currentChapterId();
   const f = q as any;
-  return chapter
-    ? f.eq("chapter_id", chapter)
-    : f.or("chapter_id.is.null,is_featured.eq.true");
+  return {
+    q: chapter
+      ? f.eq("chapter_id", chapter)
+      : f.or("chapter_id.is.null,is_featured.eq.true"),
+  };
 }
 
 /* ── Queries ───────────────────────────────────────────────────────── */
@@ -182,12 +196,12 @@ async function scope<T>(q: T): Promise<T> {
 export async function getEvents(opts: { limit?: number; upcoming?: boolean } = {}): Promise<EventRecord[]> {
   return safe<EventRecord[]>(
     async (db) => {
-      let q = await scope(
+      let q = (await scope(
         db
           .from("events")
           .select("id,slug,title,subtitle,event_type,cover,starts_at,ends_at,venue,city,country,attendance,display_index")
           .eq(PUBLISHED.column, PUBLISHED.value),
-      );
+      )).q;
       if (opts.upcoming === true) q = q.gte("starts_at", new Date().toISOString()).order("starts_at", { ascending: true });
       else if (opts.upcoming === false) q = q.lt("starts_at", new Date().toISOString()).order("starts_at", { ascending: false });
       else q = q.order("starts_at", { ascending: false });
@@ -202,9 +216,9 @@ export async function getEvents(opts: { limit?: number; upcoming?: boolean } = {
 export async function getEvent(slug: string): Promise<EventRecord | null> {
   const rows = await safe<EventRecord[]>(
     async (db) =>
-      await (await scope(
+      await ((await scope(
         db.from("events").select("*").eq("slug", slug).eq(PUBLISHED.column, PUBLISHED.value)
-      )).limit(1),
+      )).q).limit(1),
     [],
     "event"
   );
@@ -222,13 +236,13 @@ export async function getEventMedia(eventId: string): Promise<MediaRef[]> {
 export async function getPosts(opts: { limit?: number; category?: string } = {}): Promise<PostRecord[]> {
   return safe<PostRecord[]>(
     async (db) => {
-      let q = await scope(
+      let q = (await scope(
         db
           .from("posts")
           .select("id,slug,title,excerpt,cover,category,read_minutes,published_at,author")
           .eq(PUBLISHED.column, PUBLISHED.value)
           .order("published_at", { ascending: false })
-      );
+      )).q;
       if (opts.category) q = q.eq("category_slug", opts.category);
       if (opts.limit) q = q.limit(opts.limit);
       return await q;
@@ -241,9 +255,9 @@ export async function getPosts(opts: { limit?: number; category?: string } = {})
 export async function getPost(slug: string): Promise<PostRecord | null> {
   const rows = await safe<PostRecord[]>(
     async (db) =>
-      await (await scope(
+      await ((await scope(
         db.from("posts").select("*").eq("slug", slug).eq(PUBLISHED.column, PUBLISHED.value)
-      )).limit(1),
+      )).q).limit(1),
     [],
     "post"
   );
@@ -253,13 +267,13 @@ export async function getPost(slug: string): Promise<PostRecord | null> {
 export async function getProgrammes(opts: { limit?: number; pillar?: string } = {}): Promise<ProgrammeRecord[]> {
   return safe<ProgrammeRecord[]>(
     async (db) => {
-      let q = await scope(
+      let q = (await scope(
         db
           .from("programmes")
           .select("id,slug,title,subtitle,excerpt,pillar,cover,status_label,locations")
           .eq(PUBLISHED.column, PUBLISHED.value)
           .order("created_at", { ascending: false })
-      );
+      )).q;
       if (opts.pillar) q = q.eq("pillar", opts.pillar);
       if (opts.limit) q = q.limit(opts.limit);
       return await q;
@@ -297,7 +311,7 @@ export async function getEndedProgrammes(limit?: number): Promise<ArchiveEntry[]
 
   const rows = await safe<any[]>(
     async (db) => {
-      const q = await scope(
+      const q = (await scope(
         db
           .from("programmes")
           .select("id,slug,title,subtitle,excerpt,cover,start_date,end_date,locations,actual_reach")
@@ -305,7 +319,7 @@ export async function getEndedProgrammes(limit?: number): Promise<ArchiveEntry[]
           .not("end_date", "is", null)
           .lt("end_date", today)
           .order("end_date", { ascending: false })
-      );
+      )).q;
       return await (limit ? q.limit(limit) : q);
     },
     [],
@@ -388,9 +402,9 @@ export async function getRecentWork(limit = 4): Promise<ArchiveEntry[]> {
 export async function getProgramme(slug: string): Promise<ProgrammeRecord | null> {
   const rows = await safe<ProgrammeRecord[]>(
     async (db) =>
-      await (await scope(
+      await ((await scope(
         db.from("programmes").select("*").eq("slug", slug).eq(PUBLISHED.column, PUBLISHED.value)
-      )).limit(1),
+      )).q).limit(1),
     [],
     "programme"
   );

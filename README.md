@@ -10,7 +10,7 @@ education and a network of university chapters.
 **Live:** [aaci.ngo](https://aaci.ngo) · **Contact:** contact@aaci.ngo ·
 **Patient support:** support@aaci.ngo
 
-Next.js 15 (App Router) · React 19 · TypeScript · Tailwind v4 · Supabase ·
+Next.js 15 (App Router) · React 19 · TypeScript · Tailwind v3 · Supabase ·
 ImageKit · Vercel
 
 ---
@@ -97,7 +97,7 @@ That JSON is the contract — regenerate rather than hand-editing. Two tiers:
 primitives underneath, semantic aliases (`--color-action-primary`) in product
 code.
 
-> Tailwind v4 arbitrary values need underscores around calc operators —
+> Tailwind arbitrary values need underscores around calc operators —
 > `calc(100svh_-_3.5rem)`. Without them the declaration is silently dropped.
 
 ---

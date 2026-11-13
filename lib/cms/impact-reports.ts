@@ -1,10 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/auth/session";
-import { rank } from "@/lib/auth/permissions";
+import { atLeast } from "@/lib/auth/permissions";
 import { canEdit, canRemove } from "@/lib/auth/capabilities";
+import { getSession, NOT_SIGNED_IN, type ActionResult } from "@/lib/cms/shared";
 
 /**
  * Impact reports — the evidence behind the numbers.
@@ -19,7 +18,7 @@ import { canEdit, canRemove } from "@/lib/auth/capabilities";
  * a person who was not the author looking at it.
  */
 
-type Result = { ok: true; message?: string; id?: string } | { ok: false; error: string };
+type Result = ActionResult;
 
 function num(form: FormData, k: string) {
   const v = String(form.get(k) ?? "").trim();
@@ -35,9 +34,9 @@ function str(form: FormData, k: string) {
 }
 
 export async function createImpactReport(form: FormData): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canEdit(me, "impactReports")) {
     return { ok: false, error: "Your role does not allow filing impact reports." };
   }
@@ -81,16 +80,16 @@ export async function createImpactReport(form: FormData): Promise<Result> {
     ok: true,
     id: data.id as string,
     message:
-      rank(me) >= 60
+      atLeast(me, "regional_coordinator")
         ? "Filed. You can verify it below."
         : "Filed. A coordinator above you verifies it before it counts towards the published figures.",
   };
 }
 
 export async function saveImpactReport(id: string, form: FormData): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
 
   const title = str(form, "title");
   if (!title) return { ok: false, error: "A report needs a title." };
@@ -116,15 +115,15 @@ export async function saveImpactReport(id: string, form: FormData): Promise<Resu
 }
 
 export async function setReportStatus(id: string, status: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
 
   const allowed = ["draft", "submitted", "verified", "rejected"];
   if (!allowed.includes(status)) return { ok: false, error: "Unknown status." };
 
   if (status === "verified") {
-    if (rank(me) < 50) return { ok: false, error: "Only a coordinator can verify a report." };
+    if (!atLeast(me, "campus_coordinator")) return { ok: false, error: "Only a coordinator can verify a report." };
 
     /* A verified report with no number verifies nothing. Better to refuse than
        to let a blank count as evidence. */
@@ -140,7 +139,7 @@ export async function setReportStatus(id: string, status: string): Promise<Resul
         error: "Add how many people it reached before verifying — that number is what the report is for.",
       };
     }
-    if (data && data.advocate_id === me.id && rank(me) < 60) {
+    if (data && data.advocate_id === me.id && !atLeast(me, "regional_coordinator")) {
       return {
         ok: false,
         error: "You cannot verify your own report. Ask the coordinator above you.",
@@ -172,9 +171,9 @@ export async function setReportStatus(id: string, status: string): Promise<Resul
 }
 
 export async function deleteImpactReport(id: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
 
   const { data } = await db
     .from("impact_reports")

@@ -4,9 +4,15 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Img } from "@/components/media/Img";
 import type { MediaRef } from "@/lib/cms";
 import { ArrowLeft, ArrowRight, Close } from "@/components/ui/Icon";
+import { youTubeEmbed, youTubeId, youTubeThumb } from "@/lib/media/youtube";
 
 /**
  * Horizontal scrolling photo strip with a lightbox — the core of an event page.
+ *
+ * An item may also be a YouTube video (its url is the YouTube link — videos
+ * live on AAC's channel, not in our storage). It shows YouTube's thumbnail
+ * with a play badge in the strip, and plays in the lightbox. The player only
+ * loads once the video is opened.
  *
  * Accessibility, because a gallery is where it usually gets dropped:
  *   - the strip is a real <ul> of <button>s, so it is keyboard reachable
@@ -66,15 +72,43 @@ export function PhotoStrip({ photos, title }: { photos: MediaRef[]; title: strin
                 setOpen(i);
               }}
               className="block overflow-hidden rounded-lg"
-              aria-label={`Open photograph ${i + 1} of ${photos.length}`}
+              aria-label={`Open ${youTubeId(p.url) ? "video" : "photograph"} ${i + 1} of ${photos.length}`}
             >
-              <Img
-                src={p.url}
-                alt={p.alt}
-                ratio="3/2"
-                sizes="420px"
-                className="w-[min(78vw,520px)] transition-transform duration-hover ease-entrance hover:scale-[1.02]"
-              />
+              {(() => {
+                const video = youTubeId(p.url);
+                if (!video) {
+                  return (
+                    <Img
+                      src={p.url}
+                      alt={p.alt}
+                      ratio="3/2"
+                      sizes="420px"
+                      className="w-[min(78vw,520px)] transition-transform duration-hover ease-entrance hover:scale-[1.02]"
+                    />
+                  );
+                }
+                return (
+                  <span
+                    className="relative block w-[min(78vw,520px)] overflow-hidden bg-[#1E0B45]"
+                    style={{ aspectRatio: "3/2" }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={youTubeThumb(video)}
+                      alt={p.alt}
+                      loading="lazy"
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-hover ease-entrance hover:scale-[1.02]"
+                    />
+                    <span className="absolute inset-0 grid place-items-center">
+                      <span className="grid h-14 w-14 place-items-center rounded-full bg-white/95 shadow-lg">
+                        <svg viewBox="0 0 24 24" aria-hidden="true" className="ml-1 h-6 w-6 fill-[#4E23A0]">
+                          <path d="M8 5.5v13l11-6.5z" />
+                        </svg>
+                      </span>
+                    </span>
+                  </span>
+                );
+              })()}
             </button>
           </li>
         ))}
@@ -85,7 +119,7 @@ export function PhotoStrip({ photos, title }: { photos: MediaRef[]; title: strin
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
-          aria-label={`Photograph ${open + 1} of ${photos.length} from ${title}`}
+          aria-label={`${youTubeId(photos[open].url) ? "Video" : "Photograph"} ${open + 1} of ${photos.length} from ${title}`}
           tabIndex={-1}
           className="fixed inset-0 z-[80] flex flex-col bg-[rgba(23,11,48,.96)] p-4 outline-none md:p-8"
           onClick={close}
@@ -108,12 +142,30 @@ export function PhotoStrip({ photos, title }: { photos: MediaRef[]; title: strin
             className="flex min-h-0 flex-1 items-center justify-center py-4"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={photos[open].url}
-              alt={photos[open].alt}
-              className="max-h-full max-w-full rounded-lg object-contain"
-            />
+            {(() => {
+              const video = youTubeId(photos[open].url);
+              if (video) {
+                return (
+                  <iframe
+                    key={video}
+                    src={youTubeEmbed(video, { autoplay: true })}
+                    title={photos[open].alt || "Video"}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                    referrerPolicy="strict-origin-when-cross-origin"
+                    className="aspect-video max-h-full w-full max-w-[min(100%,1200px)] rounded-lg border-0"
+                  />
+                );
+              }
+              return (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={photos[open].url}
+                  alt={photos[open].alt}
+                  className="max-h-full max-w-full rounded-lg object-contain"
+                />
+              );
+            })()}
           </div>
 
           <div

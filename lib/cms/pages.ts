@@ -1,9 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/auth/session";
 import { canEdit } from "@/lib/auth/capabilities";
+import { getSession, NOT_SIGNED_IN, type ActionResult } from "@/lib/cms/shared";
 
 /**
  * Page composition.
@@ -20,12 +19,12 @@ import { canEdit } from "@/lib/auth/capabilities";
  * drag library would cost more than it returns.
  */
 
-type Result = { ok: true; message?: string } | { ok: false; error: string };
+type Result = ActionResult;
 
 export async function setSectionVisible(id: string, visible: boolean): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canEdit(me, "pages")) {
     return { ok: false, error: "Changing what appears on the site is limited to directors, admins and content leads." };
   }
@@ -46,9 +45,9 @@ export async function setSectionVisible(id: string, visible: boolean): Promise<R
 
 /** Swap a section with the one above or below it. */
 export async function moveSection(id: string, direction: "up" | "down"): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canEdit(me, "pages")) return { ok: false, error: "Your role does not allow this." };
 
   const { data: row } = await db

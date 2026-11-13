@@ -1,12 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { getProfile } from "@/lib/auth/session";
-import { rank } from "@/lib/auth/permissions";
+import { atLeast } from "@/lib/auth/permissions";
 import { extractCvText } from "@/lib/cv/extract";
 import { summariseCv } from "@/lib/cv/summarise";
+import { getSession, NOT_SIGNED_IN } from "@/lib/cms/shared";
 
 /**
  * CVs.
@@ -129,10 +128,10 @@ export async function attachCv(email: string, file: File): Promise<CvResult> {
 export async function getCvLink(advocateId: string): Promise<
   { ok: true; url: string; filename: string } | { ok: false; error: string }
 > {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 50) {
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "campus_coordinator")) {
     return { ok: false, error: "Only a coordinator can open somebody's CV." };
   }
 
@@ -183,10 +182,10 @@ export async function getCvLink(advocateId: string): Promise<
  * like the application had failed.
  */
 export async function parseCv(advocateId: string): Promise<{ ok: boolean; message?: string; error?: string }> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 50) return { ok: false, error: "Only a coordinator can do this." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "campus_coordinator")) return { ok: false, error: "Only a coordinator can do this." };
 
   const { data, error } = await db
     .from("advocates")
@@ -224,10 +223,10 @@ export async function parseCv(advocateId: string): Promise<{ ok: boolean; messag
 
 /** Remove a CV — an erasure request, or a file sent by mistake. */
 export async function removeCv(advocateId: string): Promise<{ ok: boolean; message?: string; error?: string }> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 80) return { ok: false, error: "Only an admin can delete a CV." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "admin")) return { ok: false, error: "Only an admin can delete a CV." };
 
   const { data } = await db.from("advocates").select("cv_path").eq("id", advocateId).maybeSingle();
   if (!data?.cv_path) return { ok: false, error: "There is no CV on this record." };

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth/session";
 import { canEdit, canRemove } from "@/lib/auth/capabilities";
 import { canPublish } from "@/lib/auth/permissions";
+import { getSession, NOT_SIGNED_IN, formReader, type ActionResult, slugify, uniqueSlug } from "@/lib/cms/shared";
 
 /**
  * Programmes.
@@ -20,27 +21,7 @@ import { canPublish } from "@/lib/auth/permissions";
  * does, the same reach rule that governs events governs this.
  */
 
-type Result = { ok: true; message?: string; id?: string } | { ok: false; error: string };
-
-function slugify(s: string) {
-  return s
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 70) || "programme";
-}
-
-async function uniqueSlug(db: any, base: string, id: string) {
-  let slug = base;
-  for (let n = 2; n < 60; n++) {
-    const { data } = await db.from("programmes").select("id").eq("slug", slug).maybeSingle();
-    if (!data || data.id === id) return slug;
-    slug = `${base}-${n}`;
-  }
-  return `${base}-${Date.now().toString(36)}`;
-}
+type Result = ActionResult;
 
 export async function createProgrammeAndOpen(): Promise<void> {
   const db = await createClient();
@@ -71,25 +52,20 @@ export async function createProgrammeAndOpen(): Promise<void> {
 }
 
 export async function saveProgramme(id: string, form: FormData): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canEdit(me, "programmes")) return { ok: false, error: "Your role does not allow editing programmes." };
 
-  const str = (k: string) => {
-    const v = form.get(k);
-    const s = typeof v === "string" ? v.trim() : "";
-    return s === "" ? null : s;
-  };
-  const num = (k: string) => {
-    const v = str(k);
-    if (v === null) return null;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  };
+  const { str, num } = formReader(form);
 
   const title = str("title") ?? "Untitled programme";
-  const slug = await uniqueSlug(db, slugify(str("slug") ?? title), id);
+  const slug = await uniqueSlug(
+    db,
+    "programmes",
+    slugify(str("slug") ?? title, { foldAccents: true, fallback: "programme" }),
+    { ignoreId: id, attempts: 58 }
+  );
 
   /* Locations are typed as a comma-separated line, because asking someone to
      manage a repeating field for "Enugu, Nsukka, Awka" is more interface than
@@ -127,9 +103,9 @@ export async function saveProgramme(id: string, form: FormData): Promise<Result>
 }
 
 export async function setProgrammeStatus(id: string, status: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canEdit(me, "programmes")) return { ok: false, error: "Your role does not allow this." };
 
   const allowed = ["draft", "in_review", "changes_requested", "published", "archived"];
@@ -168,9 +144,9 @@ export async function setProgrammeStatus(id: string, status: string): Promise<Re
 }
 
 export async function deleteProgramme(id: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
 
   const { data } = await db.from("programmes").select("title,status,created_by").eq("id", id).maybeSingle();
   if (!data) return { ok: false, error: "That programme no longer exists." };
@@ -195,9 +171,9 @@ export async function deleteProgramme(id: string): Promise<Result> {
 }
 
 export async function deleteManyProgrammes(ids: string[]): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canRemove(me, "programmes")) return { ok: false, error: "Only an admin can delete programmes in bulk." };
   if (ids.length === 0) return { ok: false, error: "Nothing was selected." };
 

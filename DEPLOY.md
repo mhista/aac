@@ -10,7 +10,7 @@ you guesses. This takes about five minutes.
 If you don't already have a repo:
 
 ```bash
-cd C:\Users\user\Documents\aac\web
+cd "C:\Users\HP PC\Documents\Projects\aac"
 git init
 git add .
 git commit -m "AAC website — homepage"

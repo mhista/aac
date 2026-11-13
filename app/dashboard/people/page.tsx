@@ -1,6 +1,6 @@
 import { getProfile } from "@/lib/auth/session";
 import { canRead, canEdit, canRemove, refusalFor } from "@/lib/auth/capabilities";
-import { rank } from "@/lib/auth/permissions";
+import { atLeast } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { reachableChapters, seesEverything } from "@/lib/auth/reach";
 import { PageHeader, EmptyPanel, Notice } from "@/components/dashboard/ui";
@@ -56,7 +56,7 @@ export default async function AdvocatesPage({
   if (!db) return null;
 
   const chapters = await reachableChapters(profile);
-  const isAdmin = rank(profile) >= 80;
+  const isAdmin = atLeast(profile, "admin");
 
   const SELECT =
     "id,first_name,last_name,email,phone,gender,age_range,country,locality,chapter_id," +

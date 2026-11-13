@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth/session";
 import { canEdit } from "@/lib/auth/capabilities";
 import { SETTINGS_TAG } from "./public-settings";
+import { type ActionResult } from "@/lib/cms/shared";
 
 /**
  * Site settings.
@@ -21,7 +22,7 @@ import { SETTINGS_TAG } from "./public-settings";
  * legal name are validated rather than trusted.
  */
 
-type Result = { ok: true; message?: string } | { ok: false; error: string };
+type Result = ActionResult;
 
 type Guard = { db: NonNullable<Awaited<ReturnType<typeof createClient>>> } | { error: string };
 

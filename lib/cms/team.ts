@@ -1,11 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/auth/session";
 import { canEdit, canRemove } from "@/lib/auth/capabilities";
-import { rank, type Profile } from "@/lib/auth/permissions";
+import { type Profile, atLeast } from "@/lib/auth/permissions";
 import { seesEverything } from "@/lib/auth/reach";
+import { getSession, NOT_SIGNED_IN, formReader, type ActionResult } from "@/lib/cms/shared";
 
 /**
  * People — the national board and directors, and each chapter's executives.
@@ -30,14 +29,14 @@ import { seesEverything } from "@/lib/auth/reach";
  *    About page is worse than no card.
  */
 
-type Result = { ok: true; message?: string; id?: string } | { ok: false; error: string };
+type Result = ActionResult;
 
 /** Whether this person may edit people belonging to `chapterId` (null = AAC). */
 function mayEditPeople(me: Profile, chapterId: string | null): boolean {
   if (chapterId === null) return canEdit(me, "team");
   if (seesEverything(me)) return true;
-  if (rank(me) >= 60) return true; /* regional and above — RLS narrows to their region */
-  return rank(me) >= 50 && me.chapter_id === chapterId;
+  if (atLeast(me, "regional_coordinator")) return true; /* regional and above — RLS narrows to their region */
+  return atLeast(me, "campus_coordinator") && me.chapter_id === chapterId;
 }
 
 function refusal(chapterId: string | null): string {
@@ -52,9 +51,9 @@ async function chapterOf(db: any, id: string): Promise<string | null | undefined
 }
 
 export async function createTeamMember(chapterId?: string | null): Promise<Result> {
-  const db = await createClient();
-  const profile = await getProfile();
-  if (!db || !profile) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me: profile } = session;
 
   const chapter = chapterId ?? null;
   if (!mayEditPeople(profile, chapter)) return { ok: false, error: refusal(chapter) };
@@ -91,19 +90,15 @@ export async function createTeamMember(chapterId?: string | null): Promise<Resul
 }
 
 export async function saveTeamMember(id: string, form: FormData): Promise<Result> {
-  const db = await createClient();
-  const profile = await getProfile();
-  if (!db || !profile) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me: profile } = session;
 
   const chapter = await chapterOf(db, id);
   if (chapter === undefined) return { ok: false, error: "That person could not be found." };
   if (!mayEditPeople(profile, chapter)) return { ok: false, error: refusal(chapter) };
 
-  const str = (k: string) => {
-    const v = form.get(k);
-    const s = typeof v === "string" ? v.trim() : "";
-    return s === "" ? null : s;
-  };
+  const { str } = formReader(form);
 
   const fullName = str("full_name");
   if (!fullName) return { ok: false, error: "A person needs a name." };
@@ -139,9 +134,9 @@ export async function saveTeamMember(id: string, form: FormData): Promise<Result
 }
 
 export async function setTeamPublished(id: string, next: boolean): Promise<Result> {
-  const db = await createClient();
-  const profile = await getProfile();
-  if (!db || !profile) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me: profile } = session;
 
   const chapter = await chapterOf(db, id);
   if (chapter === undefined) return { ok: false, error: "That person could not be found." };
@@ -171,9 +166,9 @@ export async function setTeamPublished(id: string, next: boolean): Promise<Resul
 }
 
 export async function deleteTeamMember(id: string): Promise<Result> {
-  const db = await createClient();
-  const profile = await getProfile();
-  if (!db || !profile) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me: profile } = session;
 
   const chapter = await chapterOf(db, id);
   if (chapter === undefined) return { ok: false, error: "That person could not be found." };

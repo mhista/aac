@@ -1,12 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/auth/session";
-import { RANK, ROLE_LABEL, rank, type Role } from "@/lib/auth/permissions";
+import { RANK, ROLE_LABEL, type Role, atLeast } from "@/lib/auth/permissions";
 import { isEmailConfigured, sendEmail } from "@/lib/email/send";
 import { SITE } from "@/lib/seo";
 import { ORG } from "@/lib/org";
+import { getSession, NOT_SIGNED_IN, formReader, type ActionResult } from "@/lib/cms/shared";
 
 /**
  * People and roles.
@@ -21,7 +20,7 @@ import { ORG } from "@/lib/org";
  * something they did not read.
  */
 
-type Result = { ok: true; message?: string } | { ok: false; error: string };
+type Result = ActionResult;
 
 /** Postgres raises these as plain messages; they are already human-readable. */
 function say(error: { message?: string } | null, fallback: string) {
@@ -34,16 +33,12 @@ function say(error: { message?: string } | null, fallback: string) {
 }
 
 export async function inviteUser(form: FormData): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 80) return { ok: false, error: "Only an admin can invite people." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "admin")) return { ok: false, error: "Only an admin can invite people." };
 
-  const str = (k: string) => {
-    const v = form.get(k);
-    const s = typeof v === "string" ? v.trim() : "";
-    return s === "" ? null : s;
-  };
+  const { str } = formReader(form);
 
   const email = str("email")?.toLowerCase();
   const role = (str("role") ?? "advocate") as Role;
@@ -108,7 +103,7 @@ export async function inviteUser(form: FormData): Promise<Result> {
         `${fullName ? `Hello ${fullName.split(" ")[0]},\n\n` : "Hello,\n\n"}` +
         `${me.full_name ?? "An administrator"} has given you access to the ${ORG.name} dashboard as ${ROLE_LABEL[role]}.\n\n` +
         `To get in, go to ${SITE}/login and enter this email address — ${email}. ` +
-        `You will be emailed a sign-in link and a six-digit code; either one works. There is no password to set up.\n\n` +
+        `You will be emailed a sign-in link and a one-time code; either one works. There is no password to set up.\n\n` +
         `Use this exact address, because your access is attached to it.\n\n` +
         `If you were not expecting this, you can ignore the message — nothing happens until you sign in.\n\n` +
         `— ${ORG.name}`,
@@ -145,18 +140,14 @@ export async function inviteUser(form: FormData): Promise<Result> {
  * unattached, which is reversible from Users & roles.
  */
 export async function assignCoordinator(form: FormData): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 80) {
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "admin")) {
     return { ok: false, error: "Only an admin can attach a coordinator to a chapter." };
   }
 
-  const str = (k: string) => {
-    const v = form.get(k);
-    const s = typeof v === "string" ? v.trim() : "";
-    return s === "" ? null : s;
-  };
+  const { str } = formReader(form);
 
   const chapterId = str("chapter_id");
   if (!chapterId) return { ok: false, error: "No chapter was given." };
@@ -243,15 +234,11 @@ export async function assignCoordinator(form: FormData): Promise<Result> {
 }
 
 export async function setUserRole(userId: string, form: FormData): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
 
-  const str = (k: string) => {
-    const v = form.get(k);
-    const s = typeof v === "string" ? v.trim() : "";
-    return s === "" ? null : s;
-  };
+  const { str } = formReader(form);
 
   const role = (str("role") ?? "advocate") as Role;
   if (!(role in RANK)) return { ok: false, error: "Unknown role." };
@@ -274,9 +261,9 @@ export async function setUserStatus(
   userId: string,
   status: "active" | "suspended" | "alumni"
 ): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
 
   const { error } = await db.rpc("set_user_status", { p_user: userId, p_status: status });
   if (error) return { ok: false, error: say(error, "Could not change their access.") };
@@ -294,10 +281,10 @@ export async function setUserStatus(
 }
 
 export async function revokeInvitation(id: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 80) return { ok: false, error: "Only an admin can do that." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "admin")) return { ok: false, error: "Only an admin can do that." };
 
   const { error } = await db
     .from("invitations")

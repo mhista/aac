@@ -1,9 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/auth/session";
 import { canEdit, canRemove } from "@/lib/auth/capabilities";
+import { getSession, NOT_SIGNED_IN, formReader, type ActionResult } from "@/lib/cms/shared";
 
 /**
  * Impact figures.
@@ -26,16 +25,16 @@ import { canEdit, canRemove } from "@/lib/auth/capabilities";
  *   designed to render it. It simply cannot be published as a headline.
  */
 
-type Result = { ok: true; message?: string; id?: string } | { ok: false; error: string };
+type Result = ActionResult;
 
 function slugKey(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "").slice(0, 50);
 }
 
 export async function createMetric(): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canEdit(me, "impactMetrics")) {
     return { ok: false, error: "Impact figures are edited by directors and admins." };
   }
@@ -68,18 +67,14 @@ export async function createMetric(): Promise<Result> {
 }
 
 export async function saveMetric(id: string, form: FormData): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canEdit(me, "impactMetrics")) {
     return { ok: false, error: "Impact figures are edited by directors and admins." };
   }
 
-  const str = (k: string) => {
-    const v = form.get(k);
-    const s = typeof v === "string" ? v.trim() : "";
-    return s === "" ? null : s;
-  };
+  const { str } = formReader(form);
 
   const label = str("label");
   if (!label) return { ok: false, error: "A figure needs a label — what is being counted." };
@@ -138,9 +133,9 @@ export async function saveMetric(id: string, form: FormData): Promise<Result> {
 }
 
 export async function setMetricPublished(id: string, next: boolean): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canEdit(me, "impactMetrics")) {
     return { ok: false, error: "Impact figures are edited by directors and admins." };
   }
@@ -180,9 +175,9 @@ export async function setMetricPublished(id: string, next: boolean): Promise<Res
 }
 
 export async function deleteMetric(id: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canRemove(me, "impactMetrics")) {
     return { ok: false, error: "Only an admin can delete a figure." };
   }

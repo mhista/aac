@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { ROLE_LABEL, canPublish, canSeeCrm, rank } from "@/lib/auth/permissions";
+import { ROLE_LABEL, canPublish, canSeeCrm, atLeast } from "@/lib/auth/permissions";
 import { ArrowRight } from "@/components/ui/Icon";
 
 export const dynamic = "force-dynamic";
@@ -40,7 +40,7 @@ export default async function DashboardHome() {
   const profile = await getProfile();
   if (!profile) return null;
 
-  const scoped = rank(profile) < 60 && !!profile.chapter_id;
+  const scoped = !atLeast(profile, "regional_coordinator") && !!profile.chapter_id;
   const c = await counts(profile.chapter_id, scoped);
   const first = (profile.full_name ?? "").split(" ")[0] || "there";
 

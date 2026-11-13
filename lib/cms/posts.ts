@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth/session";
-import { canPublish, canWrite, rank } from "@/lib/auth/permissions";
+import { canPublish, canWrite, atLeast } from "@/lib/auth/permissions";
+import { getSession, NOT_SIGNED_IN, formReader, type ActionResult, slugify, uniqueSlug } from "@/lib/cms/shared";
 
 /**
  * Blog posts.
@@ -27,28 +28,7 @@ import { canPublish, canWrite, rank } from "@/lib/auth/permissions";
  *   site, a newsletter, a search result — for a cosmetic gain.
  */
 
-type Result = { ok: true; id?: string; message?: string } | { ok: false; error: string };
-
-function slugify(s: string) {
-  return s
-    .toLowerCase()
-    .replace(/['’]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 70);
-}
-
-async function uniqueSlug(db: any, base: string, ignoreId?: string) {
-  const root = base || "post";
-  for (let i = 0; i < 25; i++) {
-    const candidate = i === 0 ? root : `${root}-${i + 1}`;
-    let q = db.from("posts").select("id").eq("slug", candidate).limit(1);
-    if (ignoreId) q = q.neq("id", ignoreId);
-    const { data } = await q;
-    if (!data || data.length === 0) return candidate;
-  }
-  return `${root}-${Date.now().toString(36)}`;
-}
+type Result = ActionResult;
 
 export async function createPost(): Promise<void> {
   const db = await createClient();
@@ -57,7 +37,7 @@ export async function createPost(): Promise<void> {
     redirect("/dashboard/blog?error=" + encodeURIComponent("Your role does not allow writing posts."));
   }
 
-  const slug = await uniqueSlug(db, `untitled-${Date.now().toString(36)}`);
+  const slug = await uniqueSlug(db, "posts", `untitled-${Date.now().toString(36)}`);
   const { data, error } = await db
     .from("posts")
     .insert({
@@ -78,16 +58,12 @@ export async function createPost(): Promise<void> {
 }
 
 export async function savePost(id: string, form: FormData): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canWrite(me)) return { ok: false, error: "Your role does not allow editing." };
 
-  const str = (k: string) => {
-    const v = form.get(k);
-    const s = typeof v === "string" ? v.trim() : "";
-    return s === "" ? null : s;
-  };
+  const { str } = formReader(form);
 
   const { data: current } = await db.from("posts").select("status,slug").eq("id", id).single();
   if (!current) return { ok: false, error: "That post no longer exists." };
@@ -99,7 +75,7 @@ export async function savePost(id: string, form: FormData): Promise<Result> {
   const locked = current.status === "published" || current.status === "scheduled";
   const slug = locked
     ? current.slug
-    : await uniqueSlug(db, slugify(str("slug") ?? title), id);
+    : await uniqueSlug(db, "posts", slugify(str("slug") ?? title), { ignoreId: id });
 
   const reviewer = str("medically_reviewed_by");
   const excerpt = str("excerpt");
@@ -136,9 +112,9 @@ export async function savePost(id: string, form: FormData): Promise<Result> {
 
 /** The blockers a reviewer would raise anyway, surfaced before submitting. */
 export async function submitPostForReview(id: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
 
   const { data: p } = await db
     .from("posts")
@@ -177,9 +153,9 @@ export async function submitPostForReview(id: string): Promise<Result> {
 }
 
 export async function publishPost(id: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canPublish(me)) {
     return { ok: false, error: "Only a coordinator, director, admin or content lead can publish. Submit it for review instead." };
   }
@@ -207,9 +183,9 @@ export async function publishPost(id: string): Promise<Result> {
 }
 
 export async function unpublishPost(id: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canPublish(me)) return { ok: false, error: "Only a reviewer can unpublish." };
 
   const { data: p } = await db.from("posts").select("slug").eq("id", id).single();
@@ -231,10 +207,10 @@ export async function unpublishPost(id: string): Promise<Result> {
 }
 
 export async function requestPostChanges(id: string, note: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 60) return { ok: false, error: "Only a reviewer can request changes." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "regional_coordinator")) return { ok: false, error: "Only a reviewer can request changes." };
   if (!note.trim()) return { ok: false, error: "Please say what needs changing — a bare rejection is not useful." };
 
   const { error } = await db
@@ -294,9 +270,9 @@ export async function deleteManyPosts(ids: string[]): Promise<Result> {
 
 /** The body of a single delete, without the redirect. */
 async function deleteOnePost(id: string): Promise<{ ok: true } | { ok: false; error: string }> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
 
   const { data: p } = await db
     .from("posts")
@@ -308,9 +284,9 @@ async function deleteOnePost(id: string): Promise<{ ok: true } | { ok: false; er
   const isPublic = p.status === "published" || p.status === "scheduled";
   const mine = p.created_by === me.id || p.chapter_id === me.chapter_id;
 
-  if (rank(me) < 60) {
+  if (!atLeast(me, "regional_coordinator")) {
     if (isPublic) return { ok: false, error: "published articles need a coordinator to remove." };
-    if (!mine || rank(me) < 35) return { ok: false, error: "you can only delete your own drafts." };
+    if (!mine || !atLeast(me, "contributor")) return { ok: false, error: "you can only delete your own drafts." };
   }
 
   await db.from("audit_log").insert({
@@ -327,9 +303,9 @@ async function deleteOnePost(id: string): Promise<{ ok: true } | { ok: false; er
 }
 
 export async function deletePost(id: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
 
   const { data: p } = await db
     .from("posts")
@@ -341,11 +317,11 @@ export async function deletePost(id: string): Promise<Result> {
   const isPublic = p.status === "published" || p.status === "scheduled";
   const mine = p.created_by === me.id || p.chapter_id === me.chapter_id;
 
-  if (rank(me) < 60) {
+  if (!atLeast(me, "regional_coordinator")) {
     if (isPublic) {
       return { ok: false, error: "This article is live. Ask a coordinator or an admin to remove it." };
     }
-    if (!mine || rank(me) < 35) {
+    if (!mine || !atLeast(me, "contributor")) {
       return { ok: false, error: "You can only delete your own drafts." };
     }
   }

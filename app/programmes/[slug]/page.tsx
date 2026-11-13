@@ -6,6 +6,7 @@ import { Reveal } from "@/components/motion/Reveal";
 import { getProgramme } from "@/lib/cms";
 import { ArrowLeft, ArrowRight } from "@/components/ui/Icon";
 import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
+import { Markdown } from "@/lib/markdown";
 
 export const revalidate = 3600;
 
@@ -69,7 +70,17 @@ export default async function ProgrammeDetail({ params }: { params: Promise<{ sl
           </Reveal>
           <Reveal delay={0.08}>
             <div className="measure text-body leading-body">
-              {p.excerpt ? <p>{p.excerpt}</p> : <p className="text-[var(--color-text-secondary)]">Full details of this programme will appear here.</p>}
+              {/* The body is the programme's full write-up. It was edited in the
+                  dashboard but never shown here — only the short excerpt was.
+                  The excerpt stays as the fallback for a programme with no
+                  write-up yet. */}
+              {p.body?.trim() ? (
+                <Markdown>{p.body}</Markdown>
+              ) : p.excerpt ? (
+                <p>{p.excerpt}</p>
+              ) : (
+                <p className="text-[var(--color-text-secondary)]">Full details of this programme will appear here.</p>
+              )}
             </div>
           </Reveal>
         </div>

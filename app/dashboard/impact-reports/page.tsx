@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getProfile } from "@/lib/auth/session";
 import { canRead, canEdit, canRemove, refusalFor } from "@/lib/auth/capabilities";
-import { rank } from "@/lib/auth/permissions";
+import { atLeast } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { reachableChapters } from "@/lib/auth/reach";
 import { PageHeader, EmptyPanel, Notice } from "@/components/dashboard/ui";
@@ -119,7 +119,7 @@ export default async function ImpactReportsPage({
         </div>
       )}
 
-      {waiting.length > 0 && rank(profile) >= 50 && status !== "submitted" && (
+      {waiting.length > 0 && atLeast(profile, "campus_coordinator") && status !== "submitted" && (
         <div className="mb-5">
           <Notice tone="warning" title={`${waiting.length} report${waiting.length === 1 ? "" : "s"} waiting on you`}>
             Until they are checked, the work in them is not counted anywhere.{" "}
@@ -160,8 +160,8 @@ export default async function ImpactReportsPage({
         chapters={chapters}
         people={people}
         myId={profile.id}
-        canVerify={rank(profile) >= 50}
-        canVerifyOwn={rank(profile) >= 60}
+        canVerify={atLeast(profile, "campus_coordinator")}
+        canVerifyOwn={atLeast(profile, "regional_coordinator")}
         canFile={canEdit(profile, "impactReports")}
         canDelete={canRemove(profile, "impactReports")}
         defaultChapter={profile.chapter_id ?? null}

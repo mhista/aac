@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { getProfile } from "@/lib/auth/session";
-import { rank } from "@/lib/auth/permissions";
+import { atLeast } from "@/lib/auth/permissions";
 import { canRead, canRemove, refusalFor } from "@/lib/auth/capabilities";
 import { createClient } from "@/lib/supabase/server";
 import { createPost, deletePost, deleteManyPosts } from "@/lib/cms/posts";
@@ -48,8 +48,8 @@ export default async function BlogList({
      else's drafts. A CAMPUS COORDINATOR sees their whole chapter, including
      articles their contributors wrote, because reviewing those is the job.
      RLS enforces the chapter half; this only decides what the list offers. */
-  const contributorOnly = rank(profile) < 50;
-  const oneChapter = rank(profile) < 60 && !!profile.chapter_id;
+  const contributorOnly = !atLeast(profile, "campus_coordinator");
+  const oneChapter = !atLeast(profile, "regional_coordinator") && !!profile.chapter_id;
 
   const mayFeature = canFeature(profile);
   const chapters = await reachableChapters(profile);

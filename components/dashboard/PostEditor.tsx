@@ -7,8 +7,8 @@ import {
   savePost, submitPostForReview, publishPost, unpublishPost,
   requestPostChanges, deletePost,
 } from "@/lib/cms/posts";
-import { Markdown, readingMinutes } from "@/lib/markdown";
 import { MediaUploader } from "./MediaUploader";
+import { RichTextarea } from "./RichTextarea";
 import { Field, inputCls, BTN, StatusPill, Notice } from "./ui";
 import { useToast } from "./Toast";
 import { ArrowLeft } from "@/components/ui/Icon";
@@ -21,7 +21,8 @@ import type { Profile } from "@/lib/auth/permissions";
  * not a checklist — an author moves between the body, the summary and the
  * title constantly, and paging between them would be hostile.
  *
- * Write and Preview are tabs over the same field. The preview uses the exact
+ * The body is a RichTextarea: a formatting toolbar, paste-from-Word, and
+ * Write/Preview tabs over the same field. The preview uses the exact
  * component the public page uses, so what an author sees is what publishes;
  * a preview that only approximates the real thing is worse than none, because
  * it is trusted and wrong.
@@ -42,16 +43,6 @@ type Post = {
   published_at: string | null;
 };
 
-const MARKDOWN_HELP = [
-  ["## Heading", "a section heading"],
-  ["**bold**  *italic*", "emphasis"],
-  ["- item", "a bullet list"],
-  ["1. item", "a numbered list"],
-  ["> quote", "a pulled-out quote"],
-  ["[text](https://…)", "a link"],
-  ["![description](https://…)", "an image — paste a link from the media library"],
-] as const;
-
 export function PostEditor({
   post,
   categories,
@@ -66,7 +57,6 @@ export function PostEditor({
   const router = useRouter();
   const [pending, start] = useTransition();
   const toast = useToast();
-  const [tab, setTab] = useState<"write" | "preview">("write");
   const [body, setBody] = useState(post.body ?? "");
 
   /* Same guard as the event editor. The fields here do not unmount — this is
@@ -200,65 +190,16 @@ export function PostEditor({
           </div>
 
           {/* ── Body ─────────────────────────────────────────────── */}
-          <div className="rounded-dash-md border border-[var(--color-border-default)] bg-white">
-            <div className="flex items-center gap-1 border-b border-[var(--color-border-subtle)] px-3 py-2">
-              {(["write", "preview"] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setTab(t)}
-                  aria-pressed={tab === t}
-                  className={`mono rounded-dash-sm px-3 py-1.5 transition-colors ${
-                    tab === t
-                      ? "bg-[var(--color-violet-100)] !text-[var(--color-violet-700)]"
-                      : "hover:bg-[var(--color-surface-page-alt)]"
-                  }`}
-                >
-                  {t === "write" ? "Write" : "Preview"}
-                </button>
-              ))}
-              <span className="mono ml-auto">
-                {body.trim() ? `${readingMinutes(body)} min read` : "empty"}
-              </span>
-            </div>
-
-            {tab === "write" ? (
-              <div className="p-5">
-                <label htmlFor="body" className="sr-only">Article body</label>
-                <textarea
-                  id="body"
-                  value={body}
-                  onChange={(e) => setBody(e.target.value)}
-                  rows={22}
-                  placeholder="Write the article here…"
-                  className={`${inputCls} font-mono text-[13px] leading-relaxed`}
-                />
-                <details className="mt-4">
-                  <summary className="mono cursor-pointer">Formatting</summary>
-                  <dl className="mt-3 grid gap-x-6 gap-y-2 text-[12px] sm:grid-cols-[auto_1fr]">
-                    {MARKDOWN_HELP.map(([code, what]) => (
-                      <div key={code} className="contents">
-                        <dt className="font-mono text-[var(--color-text-primary)]">{code}</dt>
-                        <dd className="text-[var(--color-text-secondary)]">{what}</dd>
-                      </div>
-                    ))}
-                  </dl>
-                </details>
-              </div>
-            ) : (
-              <div className="p-5">
-                {body.trim() ? (
-                  <div className="mx-auto max-w-[68ch] text-[15px] leading-relaxed">
-                    <Markdown>{body}</Markdown>
-                  </div>
-                ) : (
-                  <p className="py-10 text-center text-[13px] text-[var(--color-text-secondary)]">
-                    Nothing to preview yet.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+          <RichTextarea
+            id="body"
+            label="Article body"
+            value={body}
+            onChange={(v) => { setBody(v); setDirty(true); }}
+            rows={22}
+            placeholder="Write the article here, or paste it from Word or Google Docs…"
+            disabled={readOnly}
+            uploadFolder="/blog"
+          />
 
           {/* ── Cover ────────────────────────────────────────────── */}
           <div className="rounded-dash-md border border-[var(--color-border-default)] bg-white p-5">

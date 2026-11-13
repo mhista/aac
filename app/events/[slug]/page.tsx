@@ -7,6 +7,8 @@ import { PhotoStrip } from "@/components/media/PhotoStrip";
 import { getEvent, getEventMedia, getEvents } from "@/lib/cms";
 import { ArrowLeft, ArrowRight } from "@/components/ui/Icon";
 import { pageMetadata, JsonLd, eventLd, breadcrumbLd } from "@/lib/seo";
+import { Markdown } from "@/lib/markdown";
+import { isYouTube } from "@/lib/media/youtube";
 
 export const revalidate = 3600;
 
@@ -166,9 +168,10 @@ export default async function EventDetailPage({
           <Reveal delay={0.08}>
             <div className="measure text-body leading-body text-[var(--color-text-primary)]">
               {typeof event.body === "string" && event.body.trim() ? (
-                event.body.split("\n\n").map((p, i) => (
-                  <p key={i} className="mb-5">{p}</p>
-                ))
+                /* The same renderer as articles, so a recap can carry
+                   headings, lists and YouTube videos. Plain paragraphs
+                   separated by blank lines render exactly as before. */
+                <Markdown>{event.body}</Markdown>
               ) : (
                 <p className="text-[var(--color-text-secondary)]">
                   A full account of this event is being written up and will appear here.
@@ -184,7 +187,8 @@ export default async function EventDetailPage({
         <section className="pb-24 md:pb-32">
           <div className="wrap mb-6">
             <p className="mono">
-              Photographs · {String(media.length).padStart(2, "0")}
+              {media.some((m) => isYouTube(m.url)) ? "Photographs & video" : "Photographs"} ·{" "}
+              {String(media.length).padStart(2, "0")}
             </p>
           </div>
           <PhotoStrip photos={media} title={event.title} />

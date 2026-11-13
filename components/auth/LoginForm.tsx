@@ -10,7 +10,7 @@ import { ORG } from "@/lib/org";
 /**
  * Sign in.
  *
- * A six-digit code by default — no password to forget, reuse or leak, which
+ * A one-time code by default — no password to forget, reuse or leak, which
  * matters when the people signing in are 40+ campus coordinators rather than
  * engineers. The same email carries a one-click link as well, but the code is
  * what the screen asks for, because a link is single-use and mail scanners
@@ -22,14 +22,27 @@ import { ORG } from "@/lib/org";
  * Password sign-in stays as a fallback for accounts that have one set.
  */
 /**
+ * How long the emailed code is.
+ *
+ * Supabase lets the project choose (Auth → Providers → Email → "Email OTP
+ * Length", 6–10 digits), and this project sends 8. The form used to hard-code
+ * six — `maxLength={6}` — so the last digits of a real code could not be typed
+ * and every attempt failed. The field now accepts the whole range and the
+ * button waits for at least the shortest valid code; Supabase decides whether
+ * it is right.
+ */
+const CODE_MIN = 6;
+const CODE_MAX = 10;
+
+/**
  * Why a sign-in attempt bounced. Each of these needs a different action from
  * the person, so none of them may collapse into "link expired".
  */
 const REASONS: Record<string, string> = {
   otp_expired:
-    "That link had already been used or has expired. Email scanners often open links before you do, so use the six-digit code instead — it cannot be consumed by a scanner.",
+    "That link had already been used or has expired. Email scanners often open links before you do, so use the code from the email instead — it cannot be consumed by a scanner.",
   exchange_failed:
-    "This browser could not complete the sign-in. That usually means the email was opened in a different browser from the one that asked for it. Request a new link here, then use the six-digit code from the email.",
+    "This browser could not complete the sign-in. That usually means the email was opened in a different browser from the one that asked for it. Request a new link here, then use the code from the email.",
   no_code: "That link was incomplete. Please request a new one.",
   not_configured:
     "Sign-in is not configured on this server yet — NEXT_PUBLIC_SUPABASE_ANON_KEY is missing.",
@@ -52,7 +65,7 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(reason ? (REASONS[reason] ?? REASONS.link_expired) : null);
 
   /**
-   * Verify the six-digit code from the email.
+   * Verify the one-time code from the email.
    *
    * This path does not use PKCE at all, so it does not depend on a verifier
    * cookie and cannot be broken by opening the email on another device or by
@@ -117,7 +130,7 @@ export function LoginForm() {
             <p className="mono mb-4">Check your email</p>
             <h1 className="display text-[1.75rem]">Enter the code we sent.</h1>
             <p className="mt-4 text-body leading-body text-[var(--color-text-secondary)]">
-              We have emailed a six-digit code to{" "}
+              We have emailed a sign-in code to{" "}
               <strong className="text-[var(--color-text-primary)]">{email}</strong>. Type it below.
               It expires in an hour.
             </p>
@@ -132,7 +145,7 @@ export function LoginForm() {
                 verifier cookie. */}
             <form onSubmit={onVerifyCode} className="mt-6">
               <label htmlFor="otp" className="mono mb-2 block">
-                Six-digit code
+                Code from the email
               </label>
               <div className="flex gap-2">
                 <input
@@ -140,15 +153,15 @@ export function LoginForm() {
                   inputMode="numeric"
                   autoComplete="one-time-code"
                   pattern="[0-9]*"
-                  maxLength={6}
+                  maxLength={CODE_MAX}
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  placeholder="123456"
+                  placeholder="12345678"
                   className="w-full rounded-md border border-[var(--color-border-default)] bg-[var(--color-surface-page)] px-4 py-3 text-body tracking-[0.3em] text-[var(--color-text-primary)] outline-none focus-visible:border-[var(--color-border-brand)]"
                 />
                 <button
                   type="submit"
-                  disabled={code.length < 6 || verifying}
+                  disabled={code.length < CODE_MIN || verifying}
                   className="shrink-0 rounded-pill bg-[var(--color-action-primary)] px-6 text-body font-medium text-white transition-colors duration-hover ease-entrance hover:bg-[var(--color-action-primary-hover)] disabled:opacity-50"
                 >
                   {verifying ? "Checking…" : "Sign in"}
@@ -236,7 +249,7 @@ export function LoginForm() {
                 {state === "sending"
                   ? "Working…"
                   : mode === "link"
-                    ? "Email me a sign-in link"
+                    ? "Email me a sign-in code"
                     : "Sign in"}
                 {state !== "sending" && <ArrowRight className="h-[1.05em] w-[1.05em] transition-transform duration-hover ease-entrance group-hover:translate-x-1" />}
               </button>

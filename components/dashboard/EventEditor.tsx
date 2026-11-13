@@ -6,11 +6,14 @@ import { useRouter } from "next/navigation";
 import clsx from "clsx";
 import {
   saveEvent, submitForReview, publishEvent, requestChanges,
-  addEventPhoto, updateEventPhoto, deleteEventPhoto, deleteEvent,
+  addEventPhoto, updateEventPhoto, deleteEventPhoto, deleteEvent, addEventVideo,
 } from "@/lib/cms/actions";
 import { Field, inputCls, BTN, StatusPill, Notice, toLocalInput } from "./ui";
 import { useToast } from "./Toast";
 import { MediaUploader } from "./MediaUploader";
+import { YouTubeAdd } from "./YouTubeAdd";
+import { RichTextarea } from "./RichTextarea";
+import { youTubeId, youTubeThumb } from "@/lib/media/youtube";
 import { ArrowLeft, ArrowRight, Close } from "@/components/ui/Icon";
 import type { Profile } from "@/lib/auth/permissions";
 
@@ -89,7 +92,7 @@ export function EventEditor({
   if (!event.city && !event.country) blockers.push("Add a location");
   if (!event.body) blockers.push("Write the recap");
   const missingAlt = photos.filter((p) => !p.alt?.trim());
-  if (missingAlt.length) blockers.push(`Add alt text to ${missingAlt.length} photograph${missingAlt.length === 1 ? "" : "s"}`);
+  if (missingAlt.length) blockers.push(`Describe ${missingAlt.length} more photograph${missingAlt.length === 1 ? "" : "s"} or video${missingAlt.length === 1 ? "" : "s"} in the gallery`);
 
   return (
     <div className="mx-auto max-w-[900px]">
@@ -255,13 +258,13 @@ export function EventEditor({
               htmlFor="body"
               hint="What did you do, who came, and what changed because you were there? Plain language. Two or three paragraphs is plenty — separate them with a blank line."
             >
-              <textarea
+              <RichTextarea
                 id="body"
                 name="body"
                 defaultValue={event.body ?? ""}
                 rows={14}
-                className={`${inputCls} resize-y leading-relaxed`}
                 disabled={readOnly}
+                uploadFolder="/events"
                 placeholder={"We ran a cervical cancer screening at…\n\n143 women were screened, and…\n\nWhat surprised us was…"}
               />
             </Field>
@@ -481,8 +484,8 @@ function PhotosStep({
       {!readOnly && (
         <MediaUploader
           folder="/events"
-          label="Add photographs or video"
-          hint="Straight from your phone or computer. Choose as many as you like — they upload together. Add a description to each one below once it lands."
+          label="Add photographs"
+          hint="Straight from your phone or computer. Choose as many as you like — they upload together. Add a description to each one below once it lands. Videos go on YouTube — add them with the link below."
           onUploaded={(r) =>
             run(
               () =>
@@ -499,18 +502,38 @@ function PhotosStep({
         />
       )}
 
+      {!readOnly && (
+        <YouTubeAdd
+          onAdd={async (link) => {
+            /* Same response handling as an upload: a toast on success, the
+               reason on refusal. Returned so the field can show it too. */
+            const res = await addEventVideo(eventId, link);
+            run(async () => res, "Video added.");
+            return res;
+          }}
+        />
+      )}
+
       {photos.length === 0 ? (
         <p className="rounded-dash-sm border border-dashed border-[var(--color-border-default)] px-4 py-8 text-center text-[13px] text-[var(--color-text-secondary)]">
-          No photographs yet. An event page without them is just a claim.
+          No photographs or videos yet. An event page without them is just a claim.
         </p>
       ) : (
         <ul className="space-y-3">
-          {photos.map((p, i) => (
+          {photos.map((p, i) => {
+            const video = youTubeId(p.url);
+            const noun = video ? "video" : "photograph";
+            return (
             <li key={p.id} className="flex gap-4 rounded-dash-sm border border-[var(--color-border-default)] p-3">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={p.url} alt={p.alt || ""} className="h-20 w-28 shrink-0 rounded-dash-xs object-cover" />
+              <span className="relative h-20 w-28 shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={video ? youTubeThumb(video) : p.url} alt={p.alt || ""} className="h-20 w-28 rounded-dash-xs object-cover" />
+                {video && (
+                  <span className="mono absolute bottom-1 left-1 rounded bg-black/70 px-1.5 py-0.5 !text-[10px] !text-white">YouTube</span>
+                )}
+              </span>
               <div className="min-w-0 flex-1">
-                <p className="mono mb-1.5">Photograph {String(i + 1).padStart(2, "0")}</p>
+                <p className="mono mb-1.5">{video ? "Video" : "Photograph"} {String(i + 1).padStart(2, "0")}</p>
                 <input
                   defaultValue={p.alt}
                   disabled={readOnly}
@@ -520,8 +543,8 @@ function PhotosStep({
                     }
                   }}
                   className={inputCls}
-                  placeholder="Describe this photograph…"
-                  aria-label={`Alt text for photograph ${i + 1}`}
+                  placeholder={video ? "What is this video? e.g. Highlights from the screening day" : "Describe this photograph…"}
+                  aria-label={`Description for ${noun} ${i + 1}`}
                 />
                 {!p.alt?.trim() && (
                   <p className="mt-1.5 text-[12px] text-[var(--color-feedback-danger-text)]">
@@ -532,15 +555,16 @@ function PhotosStep({
               {!readOnly && (
                 <button
                   type="button"
-                  aria-label={`Remove photograph ${i + 1}`}
-                  onClick={() => run(() => deleteEventPhoto(p.id, eventId), "Photograph removed.")}
+                  aria-label={`Remove ${noun} ${i + 1}`}
+                  onClick={() => run(() => deleteEventPhoto(p.id, eventId), video ? "Video removed." : "Photograph removed.")}
                   className="grid h-9 w-9 shrink-0 place-items-center self-start rounded-dash-sm text-[var(--color-text-secondary)] hover:bg-[var(--color-feedback-danger-surface)] hover:text-[var(--color-feedback-danger-text)]"
                 >
                   <Close className="h-4 w-4" />
                 </button>
               )}
             </li>
-          ))}
+            );
+          })}
         </ul>
       )}
 

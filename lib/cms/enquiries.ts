@@ -1,9 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/auth/session";
-import { rank } from "@/lib/auth/permissions";
+import { atLeast } from "@/lib/auth/permissions";
+import { getSession, NOT_SIGNED_IN, type ActionResult } from "@/lib/cms/shared";
 
 /* Kept local: a "use server" module may export only async functions. */
 const STATUSES = ["new", "read", "actioned", "spam"] as const;
@@ -19,13 +18,13 @@ const STATUSES = ["new", "read", "actioned", "spam"] as const;
  * Enquiries are never edited, only triaged. What somebody wrote is a record.
  */
 
-type Result = { ok: true; message?: string } | { ok: false; error: string };
+type Result = ActionResult;
 
 export async function setEnquiryStatus(id: string, status: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 50) return { ok: false, error: "Your role does not allow this." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "campus_coordinator")) return { ok: false, error: "Your role does not allow this." };
   if (!(STATUSES as readonly string[]).includes(status)) {
     return { ok: false, error: "Unknown status." };
   }
@@ -38,10 +37,10 @@ export async function setEnquiryStatus(id: string, status: string): Promise<Resu
 }
 
 export async function deleteEnquiry(id: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 80) {
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "admin")) {
     return {
       ok: false,
       error: "Only an admin can delete an enquiry. Mark it as spam instead — that hides it without destroying the record.",

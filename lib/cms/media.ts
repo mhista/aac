@@ -1,10 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/auth/session";
 import { canWrite } from "@/lib/auth/permissions";
 import { canRemove } from "@/lib/auth/capabilities";
+import { getSession, NOT_SIGNED_IN, formReader, type ActionResult } from "@/lib/cms/shared";
 
 /**
  * The media library.
@@ -23,7 +22,7 @@ import { canRemove } from "@/lib/auth/capabilities";
  * photographs described as "photo".
  */
 
-type Result = { ok: true; id?: string; message?: string } | { ok: false; error: string };
+type Result = ActionResult;
 
 export interface AssetInput {
   url: string;
@@ -45,9 +44,9 @@ function kindOf(mime?: string) {
 
 /** Called by MediaUploader after every successful upload, everywhere. */
 export async function recordAsset(input: AssetInput): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canWrite(me)) return { ok: false, error: "Your role does not allow uploading." };
   if (!input.url) return { ok: false, error: "That upload did not return a file." };
 
@@ -88,16 +87,12 @@ export async function recordAsset(input: AssetInput): Promise<Result> {
 }
 
 export async function updateAsset(id: string, form: FormData): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canWrite(me)) return { ok: false, error: "Your role does not allow this." };
 
-  const str = (k: string) => {
-    const v = form.get(k);
-    const s = typeof v === "string" ? v.trim() : "";
-    return s === "" ? null : s;
-  };
+  const { str } = formReader(form);
 
   const { error } = await db
     .from("media_assets")
@@ -127,9 +122,9 @@ export async function updateAsset(id: string, form: FormData): Promise<Result> {
  * damage nobody notices for months.
  */
 export async function deleteAsset(id: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
   if (!canRemove(me, "media")) return { ok: false, error: "Only an admin can delete a file." };
 
   const { data: asset } = await db

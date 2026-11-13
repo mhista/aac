@@ -3,13 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth/session";
-import { rank } from "@/lib/auth/permissions";
+import { atLeast } from "@/lib/auth/permissions";
 import { attachCv } from "@/lib/cms/cv";
 import {
   AGE_RANGES, COUNTRIES, EXPERIENCE, GENDERS, INTERESTS, INVOLVEMENT, PROFILE_KINDS,
   fieldForHeader, matchOption, splitMulti,
   type AdvocateInput,
 } from "@/lib/advocates/form";
+import { getSession, NOT_SIGNED_IN, type ActionResult } from "@/lib/cms/shared";
 
 /**
  * Advocates — the people who have signed up to be part of AAC.
@@ -19,7 +20,7 @@ import {
  * the Google Forms spreadsheets.
  */
 
-type Result = { ok: true; message?: string } | { ok: false; error: string };
+type Result = ActionResult;
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
 
@@ -116,10 +117,10 @@ export async function registerAdvocate(form: FormData): Promise<Result> {
 /* ── Working through the list ────────────────────────────────────────── */
 
 export async function setAdvocateStatus(id: string, status: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 50) return { ok: false, error: "Only a coordinator can change an advocate's status." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "campus_coordinator")) return { ok: false, error: "Only a coordinator can change an advocate's status." };
 
   const allowed = ["new", "reviewing", "accepted", "active", "declined", "dormant"];
   if (!allowed.includes(status)) return { ok: false, error: "Unknown status." };
@@ -135,10 +136,10 @@ export async function setAdvocateStatus(id: string, status: string): Promise<Res
 }
 
 export async function assignAdvocateChapter(id: string, chapterId: string | null): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 50) return { ok: false, error: "Only a coordinator can attach someone to a chapter." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "campus_coordinator")) return { ok: false, error: "Only a coordinator can attach someone to a chapter." };
 
   const { error } = await db
     .from("advocates")
@@ -151,10 +152,10 @@ export async function assignAdvocateChapter(id: string, chapterId: string | null
 }
 
 export async function saveAdvocateNote(id: string, note: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 50) return { ok: false, error: "Only a coordinator can add notes." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "campus_coordinator")) return { ok: false, error: "Only a coordinator can add notes." };
 
   const { error } = await db.from("advocates").update({ notes: note || null }).eq("id", id);
   if (error) return { ok: false, error: error.message };
@@ -164,10 +165,10 @@ export async function saveAdvocateNote(id: string, note: string): Promise<Result
 }
 
 export async function deleteAdvocate(id: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 80) {
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "admin")) {
     return {
       ok: false,
       error: "Only an admin can delete someone's record. If they asked to be removed, tell an admin.",
@@ -258,7 +259,7 @@ export async function importAdvocatesCsv(form: FormData): Promise<ImportReport> 
   const db = await createClient();
   const me = await getProfile();
   if (!db || !me) return { ...empty, error: "You are not signed in." };
-  if (rank(me) < 80) return { ...empty, error: "Only an admin can import advocate records." };
+  if (!atLeast(me, "admin")) return { ...empty, error: "Only an admin can import advocate records." };
 
   const file = form.get("file");
   const commit = form.get("commit") === "yes";

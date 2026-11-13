@@ -47,6 +47,17 @@ export interface Profile {
 export const rank = (p?: Profile | null) =>
   p && p.status === "active" ? RANK[p.role] ?? 0 : 0;
 
+/**
+ * True when this person is active and ranks at least as high as `role`.
+ *
+ * Exactly `rank(p) >= RANK[role]`, named so a check says which role it means
+ * rather than a bare number. Note that board members (90) pass every check up
+ * to admin — rank cannot express "reads everything, writes nothing". Where
+ * that matters, use the area matrix in capabilities.ts instead.
+ */
+export const atLeast = (p: Profile | null | undefined, role: Role) =>
+  rank(p) >= RANK[role];
+
 /** Board members read everything and write nothing — by design. */
 export const canWrite = (p?: Profile | null) =>
   !!p && p.role !== "board_member" && rank(p) >= 35;

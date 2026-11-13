@@ -1,5 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { YouTube } from "@/components/media/YouTube";
+import { youTubeId } from "@/lib/media/youtube";
 
 /**
  * A small Markdown renderer, deliberately hand-written.
@@ -14,7 +16,7 @@ import type { ReactNode } from "react";
  *    more than the features a full parser would add.
  *
  * 2. SCOPE. Articles here need headings, paragraphs, emphasis, links, lists,
- *    quotes, images and rules. That is the whole grammar the editor documents
+ *    quotes, images, YouTube videos and rules. That is the whole grammar the editor documents
  *    and the whole grammar supported. Anything unrecognised renders as the
  *    plain text it is, which fails visibly rather than silently.
  *
@@ -157,6 +159,25 @@ export function Markdown({ children }: { children: string | null | undefined }) 
 
     if (line.trim() === "") {
       flushAll();
+      continue;
+    }
+
+    /* A YouTube video: the link on its own line, or ![caption](link).
+       Videos live on AAC's YouTube channel, never in our own storage — see
+       lib/media/youtube.ts. Checked before images so a YouTube link written
+       with image syntax plays instead of rendering a broken picture. */
+    const bare = line.trim();
+    const asImage = bare.match(/^!\[([^\]]*)\]\(([^)\s]+)\)$/);
+    const videoId = youTubeId(asImage ? asImage[2] : bare);
+    if (videoId) {
+      flushAll();
+      const caption = asImage?.[1]?.trim() ?? "";
+      blocks.push(
+        <figure key={`v${key++}`} className="mt-10">
+          <YouTube id={videoId} title={caption || "Video"} />
+          {caption && <figcaption className="mono mt-3">{caption}</figcaption>}
+        </figure>
+      );
       continue;
     }
 

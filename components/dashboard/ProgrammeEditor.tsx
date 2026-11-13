@@ -7,6 +7,7 @@ import { saveProgramme, setProgrammeStatus } from "@/lib/cms/programmes";
 import { BTN, Field, inputCls, Notice, PageHeader, StatusPill } from "./ui";
 import { useToast } from "./Toast";
 import { ORG } from "@/lib/org";
+import { RichTextarea } from "./RichTextarea";
 
 /**
  * The programme editor.
@@ -216,12 +217,12 @@ export function ProgrammeEditor({
               htmlFor="p-body"
               hint="What the programme does, who it is for, and how someone takes part."
             >
-              <textarea
+              <RichTextarea
                 id="p-body"
                 name="body"
                 rows={14}
                 defaultValue={programme.body ?? ""}
-                className={`${inputCls} min-h-[300px] resize-y font-[inherit] leading-relaxed`}
+                uploadFolder="/programmes"
               />
             </Field>
           </div>

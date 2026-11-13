@@ -1,7 +1,7 @@
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import { getProfile } from "@/lib/auth/session";
-import { rank } from "@/lib/auth/permissions";
+import { atLeast } from "@/lib/auth/permissions";
 import { createClient } from "@/lib/supabase/server";
 import { reachableChapters } from "@/lib/auth/reach";
 import { PageHeader, EmptyPanel, Notice } from "@/components/dashboard/ui";
@@ -33,7 +33,7 @@ export default async function ExecutivesPage({
 
   /* Campus coordinator and upwards. A contributor writes; they do not decide
      who runs the chapter. */
-  if (rank(profile) < 50) {
+  if (!atLeast(profile, "campus_coordinator")) {
     return (
       <div className="mx-auto max-w-[1100px]">
         <PageHeader title="Chapter executives" />

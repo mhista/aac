@@ -1,9 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/auth/session";
 import { canFeature } from "@/lib/auth/reach";
+import { getSession, NOT_SIGNED_IN, type ActionResult } from "@/lib/cms/shared";
 
 /**
  * Choosing what a chapter has made that the whole organisation should see.
@@ -18,7 +17,7 @@ import { canFeature } from "@/lib/auth/reach";
  * can say why, rather than showing a Postgres exception.
  */
 
-type Result = { ok: true; message?: string } | { ok: false; error: string };
+type Result = ActionResult;
 
 type Kind = "events" | "posts" | "programmes";
 
@@ -35,9 +34,9 @@ const DASH_PATH: Record<Kind, string> = {
 };
 
 export async function setFeatured(kind: Kind, id: string, on: boolean): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
 
   if (!canFeature(me)) {
     return {

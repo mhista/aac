@@ -153,7 +153,7 @@ export function MediaLibrary({
         <MediaUploader
           folder="/library"
           label="Add to the library"
-          hint="Photographs or video from your phone or computer. They appear below as they finish — add descriptions afterwards."
+          hint="Photographs from your phone or computer. They appear below as they finish — add descriptions afterwards. Videos go on AAC's YouTube channel and are added to a page by link, not uploaded here."
           onUploaded={() => router.refresh()}
         />
       )}

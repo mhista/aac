@@ -1,6 +1,6 @@
 import { getProfile } from "@/lib/auth/session";
 import { canRead, canEdit, canRemove, refusalFor } from "@/lib/auth/capabilities";
-import { rank } from "@/lib/auth/permissions";
+import { atLeast } from "@/lib/auth/permissions";
 import { hostingConfigured } from "@/lib/hosting/vercel-domains";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader, EmptyPanel } from "@/components/dashboard/ui";
@@ -130,9 +130,9 @@ export default async function ChaptersPage({
         canCreate={canEdit(profile, "chapters")}
         canDelete={canRemove(profile, "chapters")}
         canPublish={canEdit(profile, "chapters")}
-        canManageSites={rank(profile) >= 80}
+        canManageSites={atLeast(profile, "admin")}
         hostingReady={hostingConfigured()}
-        canAssign={rank(profile) >= 80}
+        canAssign={atLeast(profile, "admin")}
         candidates={(freeStaff.data ?? []).map((p: any) => ({
           id: p.id,
           name: p.full_name || p.email || "Unnamed",

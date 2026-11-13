@@ -22,6 +22,10 @@ import { Close } from "@/components/ui/Icon";
  * · "Shrink before uploading" is on by default, because a 9MB phone photo
  *   displays identically at a tenth the size, and off is one tap away for
  *   anything headed for print.
+ * · Photographs only, by default. Video goes to AAC's YouTube channel and is
+ *   added by link (YouTubeAdd), never uploaded here: a phone video is
+ *   hundreds of megabytes and YouTube streams it far better than we could.
+ *   Videos uploaded before this change keep working.
  */
 
 type Item = {
@@ -37,7 +41,7 @@ const CONCURRENCY = 2;
 
 export function MediaUploader({
   folder,
-  accept = "image/*,video/*",
+  accept = "image/*",
   onUploaded,
   label = "Add photographs",
   hint,
@@ -145,7 +149,7 @@ export function MediaUploader({
       >
         <p className="text-[14px] font-medium text-[var(--color-text-primary)]">{label}</p>
         <p className="mx-auto mt-1.5 max-w-[46ch] text-[12px] leading-relaxed text-[var(--color-text-secondary)]">
-          {hint ?? "Photographs or video, straight from your phone or computer. Pick as many as you like at once."}
+          {hint ?? "Photographs, straight from your phone or computer. Pick as many as you like at once. Videos go on YouTube and are added by link."}
         </p>
 
         <input

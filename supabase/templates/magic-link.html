@@ -6,7 +6,7 @@
   Paste the whole thing into the message body. Subject: Your AAC sign-in code
 
   WHY IT EXISTS
-  Supabase generates a six-digit code for every sign-in request whether you
+  Supabase generates a one-time code (its length is set under Auth → Providers → Email) for every sign-in request whether you
   ask for one or not — but the default template only prints
   {{ .ConfirmationURL }}, so the code is created and then thrown away unseen.
   That is why only the link was arriving. Adding {{ .Token }} is the whole fix.

@@ -1,10 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/auth/session";
-import { rank } from "@/lib/auth/permissions";
+import { atLeast } from "@/lib/auth/permissions";
 import { claimHost, releaseHost } from "@/lib/hosting/vercel-domains";
+import { getSession, NOT_SIGNED_IN, formReader, type ActionResult } from "@/lib/cms/shared";
 
 /**
  * University chapters.
@@ -20,7 +19,7 @@ import { claimHost, releaseHost } from "@/lib/hosting/vercel-domains";
  * chapter reaches the public until someone deliberately makes it active.
  */
 
-type Result = { ok: true; message?: string; id?: string } | { ok: false; error: string };
+type Result = ActionResult;
 
 /* NOT exported. A "use server" module may only export async functions —
    anything else is a runtime error at import time, which TypeScript does not
@@ -28,10 +27,10 @@ type Result = { ok: true; message?: string; id?: string } | { ok: false; error: 
 const CHAPTER_STATUSES = ["pending", "active", "dormant", "closed"] as const;
 
 export async function createChapter(): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 60) {
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "regional_coordinator")) {
     return { ok: false, error: "Only a regional coordinator or above can add a chapter." };
   }
 
@@ -56,21 +55,11 @@ export async function createChapter(): Promise<Result> {
 }
 
 export async function saveChapter(id: string, form: FormData): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
 
-  const str = (k: string) => {
-    const v = form.get(k);
-    const s = typeof v === "string" ? v.trim() : "";
-    return s === "" ? null : s;
-  };
-  const num = (k: string) => {
-    const v = str(k);
-    if (v === null) return null;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  };
+  const { str, num } = formReader(form);
 
   const university = str("university");
   const country = str("country");
@@ -84,7 +73,7 @@ export async function saveChapter(id: string, form: FormData): Promise<Result> {
 
   /* Making a chapter public is a different act from editing one, and needs
      more than a campus coordinator editing their own row. */
-  if (status === "active" && rank(me) < 60) {
+  if (status === "active" && !atLeast(me, "regional_coordinator")) {
     return {
       ok: false,
       error: "Only a regional coordinator or above can make a chapter live on the website.",
@@ -143,10 +132,10 @@ export async function saveChapter(id: string, form: FormData): Promise<Result> {
  * outage.
  */
 export async function saveChapterSite(id: string, form: FormData): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 80) {
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "admin")) {
     return { ok: false, error: "Only an admin can give a chapter its own website or take one down." };
   }
 
@@ -249,10 +238,10 @@ export async function saveChapterSite(id: string, form: FormData): Promise<Resul
 }
 
 export async function deleteChapter(id: string): Promise<Result> {
-  const db = await createClient();
-  const me = await getProfile();
-  if (!db || !me) return { ok: false, error: "You are not signed in." };
-  if (rank(me) < 80) return { ok: false, error: "Only an admin can delete a chapter." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me } = session;
+  if (!atLeast(me, "admin")) return { ok: false, error: "Only an admin can delete a chapter." };
 
   /* People and events point at chapters. Deleting one out from under them
      leaves coordinators scoped to nothing and events with no home, so refuse

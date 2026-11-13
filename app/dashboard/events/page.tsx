@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { getProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { rank, canWrite } from "@/lib/auth/permissions";
+import { canWrite, atLeast } from "@/lib/auth/permissions";
 import { PageHeader, StatusPill, EmptyPanel, BTN, fmtDate, Notice } from "@/components/dashboard/ui";
 import { createEventAndOpen, deleteEvent, deleteManyEvents } from "@/lib/cms/actions";
 import { ConfirmDelete } from "@/components/dashboard/ConfirmDelete";
@@ -33,7 +33,7 @@ export default async function EventsList({
   const db = await createClient();
   if (!profile) return null;
 
-  const scoped = rank(profile) < 60 && !!profile.chapter_id;
+  const scoped = !atLeast(profile, "regional_coordinator") && !!profile.chapter_id;
   const mayFeature = canFeature(profile);
 
   /* Which chapters this person can even see. RLS already restricts the rows

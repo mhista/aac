@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth/session";
-import { rank } from "@/lib/auth/permissions";
+import { atLeast } from "@/lib/auth/permissions";
 import { isEmailConfigured, sendBatch } from "@/lib/email/send";
 import { SITE } from "@/lib/seo";
 import { ORG } from "@/lib/org";
@@ -32,7 +32,7 @@ export async function listWaitlist(filter?: {
 }): Promise<WaitlistRow[]> {
   const db = await createClient();
   const profile = await getProfile();
-  if (!db || !profile || rank(profile) < 50) return [];
+  if (!db || !profile || !atLeast(profile, "campus_coordinator")) return [];
 
   let q = db
     .from("application_waitlist")
@@ -56,7 +56,7 @@ export async function setApplicationsOpen(open: boolean): Promise<AdminResult> {
   const db = await createClient();
   const profile = await getProfile();
   if (!db || !profile) return { ok: false, error: "You are not signed in." };
-  if (rank(profile) < 80) {
+  if (!atLeast(profile, "admin")) {
     return { ok: false, error: "Only an admin can open or close applications." };
   }
 
@@ -93,7 +93,7 @@ export async function setClosedNote(note: string): Promise<AdminResult> {
   const db = await createClient();
   const profile = await getProfile();
   if (!db || !profile) return { ok: false, error: "You are not signed in." };
-  if (rank(profile) < 80) return { ok: false, error: "Only an admin can change this." };
+  if (!atLeast(profile, "admin")) return { ok: false, error: "Only an admin can change this." };
 
   const { data: current } = await db
     .from("site_settings")
@@ -121,7 +121,7 @@ export async function setWaitlistStatus(id: string, status: string): Promise<Adm
   const db = await createClient();
   const profile = await getProfile();
   if (!db || !profile) return { ok: false, error: "You are not signed in." };
-  if (rank(profile) < 50) return { ok: false, error: "Your role does not allow this." };
+  if (!atLeast(profile, "campus_coordinator")) return { ok: false, error: "Your role does not allow this." };
 
   if (!(WAITLIST_STATUSES as readonly string[]).includes(status)) return { ok: false, error: "Unknown status." };
 
@@ -161,7 +161,7 @@ export async function notifyWaitlist(
   const db = await createClient();
   const profile = await getProfile();
   if (!db || !profile) return { ok: false, error: "You are not signed in." };
-  if (rank(profile) < 80) {
+  if (!atLeast(profile, "admin")) {
     return { ok: false, error: "Only an admin can email the waitlist." };
   }
   if (!isEmailConfigured()) {

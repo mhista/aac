@@ -3,8 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { getProfile } from "@/lib/auth/session";
-import { canPublish, canWrite, rank } from "@/lib/auth/permissions";
+import { canPublish, canWrite, atLeast } from "@/lib/auth/permissions";
+import { getSession, NOT_SIGNED_IN, formReader, type ActionResult, slugify, uniqueSlug } from "@/lib/cms/shared";
+import { youTubeId, youTubeWatch } from "@/lib/media/youtube";
 
 /**
  * Event server actions.
@@ -19,39 +20,15 @@ import { canPublish, canWrite, rank } from "@/lib/auth/permissions";
  * Postgres, not by a hidden button.
  */
 
-export type ActionResult = { ok: true; id?: string } | { ok: false; error: string };
-
-function slugify(s: string) {
-  return s
-    .toLowerCase()
-    .replace(/['’]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 70);
-}
-
-/** Slugs must be unique. Append -2, -3 … rather than failing on the constraint. */
-async function uniqueSlug(db: any, base: string, ignoreId?: string) {
-  const root = base || "event";
-  for (let i = 0; i < 25; i++) {
-    const candidate = i === 0 ? root : `${root}-${i + 1}`;
-    let q = db.from("events").select("id").eq("slug", candidate).limit(1);
-    if (ignoreId) q = q.neq("id", ignoreId);
-    const { data } = await q;
-    if (!data || data.length === 0) return candidate;
-  }
-  return `${root}-${Date.now().toString(36)}`;
-}
-
 export async function createEvent(): Promise<ActionResult> {
-  const profile = await getProfile();
-  const db = await createClient();
-  if (!db || !profile) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me: profile } = session;
   if (!canWrite(profile)) {
     return { ok: false, error: "Your role does not allow creating events." };
   }
 
-  const slug = await uniqueSlug(db, `untitled-${Date.now().toString(36)}`);
+  const slug = await uniqueSlug(db, "events", `untitled-${Date.now().toString(36)}`);
   const { data, error } = await db
     .from("events")
     .insert({
@@ -91,30 +68,16 @@ export async function createEventAndOpen(): Promise<void> {
 }
 
 export async function saveEvent(id: string, form: FormData): Promise<ActionResult> {
-  const profile = await getProfile();
-  const db = await createClient();
-  if (!db || !profile) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me: profile } = session;
   if (!canWrite(profile)) return { ok: false, error: "Your role does not allow editing." };
 
-  const str = (k: string) => {
-    const v = form.get(k);
-    const s = typeof v === "string" ? v.trim() : "";
-    return s === "" ? null : s;
-  };
-  const num = (k: string) => {
-    const v = str(k);
-    if (v === null) return null;
-    const n = Number(v);
-    return Number.isFinite(n) ? n : null;
-  };
-  const ts = (k: string) => {
-    const v = str(k);
-    return v ? new Date(v).toISOString() : null;
-  };
+  const { str, num, ts } = formReader(form);
 
   const title = str("title") ?? "Untitled event";
   const wantedSlug = str("slug");
-  const slug = await uniqueSlug(db, slugify(wantedSlug ?? title), id);
+  const slug = await uniqueSlug(db, "events", slugify(wantedSlug ?? title), { ignoreId: id });
 
   const { error } = await db
     .from("events")
@@ -149,9 +112,9 @@ export async function saveEvent(id: string, form: FormData): Promise<ActionResul
  * something that will only bounce back.
  */
 export async function submitForReview(id: string): Promise<ActionResult> {
-  const profile = await getProfile();
-  const db = await createClient();
-  if (!db || !profile) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me: profile } = session;
 
   const { data: ev } = await db
     .from("events")
@@ -183,7 +146,7 @@ export async function submitForReview(id: string): Promise<ActionResult> {
   if (noAlt > 0) {
     return {
       ok: false,
-      error: `${noAlt} photograph${noAlt === 1 ? "" : "s"} still need alt text. Every image needs a short description so people using a screen reader know what it shows.`,
+      error: `${noAlt === 1 ? "One photograph or video" : `${noAlt} photographs or videos`} in the gallery still ${noAlt === 1 ? "needs" : "need"} a description. Every one needs a short description so people using a screen reader know what it shows.`,
     };
   }
 
@@ -207,9 +170,9 @@ export async function submitForReview(id: string): Promise<ActionResult> {
 }
 
 export async function publishEvent(id: string): Promise<ActionResult> {
-  const profile = await getProfile();
-  const db = await createClient();
-  if (!db || !profile) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me: profile } = session;
   if (!canPublish(profile)) {
     return {
       ok: false,
@@ -233,10 +196,10 @@ export async function publishEvent(id: string): Promise<ActionResult> {
 
 /** Send it back with a reason. The reason is the whole point. */
 export async function requestChanges(id: string, note: string): Promise<ActionResult> {
-  const profile = await getProfile();
-  const db = await createClient();
-  if (!db || !profile) return { ok: false, error: "You are not signed in." };
-  if (rank(profile) < 60) return { ok: false, error: "Only a reviewer can request changes." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me: profile } = session;
+  if (!atLeast(profile, "regional_coordinator")) return { ok: false, error: "Only a reviewer can request changes." };
   if (!note.trim()) return { ok: false, error: "Please say what needs changing — a bare rejection is not useful." };
 
   const { error } = await db
@@ -275,9 +238,9 @@ export async function requestChanges(id: string, note: string): Promise<ActionRe
 export async function deleteManyEvents(ids: string[]): Promise<ActionResult> {
   if (!ids.length) return { ok: false, error: "Nothing selected." };
 
-  const db = await createClient();
-  const profile = await getProfile();
-  if (!db || !profile) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me: profile } = session;
 
   let gone = 0;
   const refusals: string[] = [];
@@ -293,9 +256,9 @@ export async function deleteManyEvents(ids: string[]): Promise<ActionResult> {
     const isPublic = ev.status === "published" || ev.status === "scheduled";
     const mine = ev.created_by === profile.id || ev.chapter_id === profile.chapter_id;
 
-    if (rank(profile) < 60) {
+    if (!atLeast(profile, "regional_coordinator")) {
       if (isPublic) { refusals.push("published events need a coordinator to remove."); continue; }
-      if (!mine || rank(profile) < 35) { refusals.push("you can only delete your own chapter's events."); continue; }
+      if (!mine || !atLeast(profile, "contributor")) { refusals.push("you can only delete your own chapter's events."); continue; }
     }
 
     await db.from("audit_log").insert({
@@ -324,9 +287,9 @@ export async function deleteManyEvents(ids: string[]): Promise<ActionResult> {
 }
 
 export async function deleteEvent(id: string): Promise<ActionResult> {
-  const profile = await getProfile();
-  const db = await createClient();
-  if (!db || !profile) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me: profile } = session;
 
   const { data: ev } = await db
     .from("events")
@@ -341,14 +304,14 @@ export async function deleteEvent(id: string): Promise<ActionResult> {
 
   /* Mirrors the RLS rule so the person gets a sentence, not a silent no-op.
      Postgres still refuses independently. */
-  if (rank(profile) < 60) {
+  if (!atLeast(profile, "regional_coordinator")) {
     if (isPublic) {
       return {
         ok: false,
         error: "This event is live on the website. Ask a regional coordinator or an admin to remove it.",
       };
     }
-    if (!mine || rank(profile) < 35) {
+    if (!mine || !atLeast(profile, "contributor")) {
       return { ok: false, error: "You can only delete events from your own chapter." };
     }
   }
@@ -383,9 +346,9 @@ export async function addEventPhoto(
   eventId: string,
   photo: { url: string; alt: string; caption?: string | null }
 ): Promise<ActionResult> {
-  const db = await createClient();
-  const profile = await getProfile();
-  if (!db || !profile) return { ok: false, error: "You are not signed in." };
+  const session = await getSession();
+  if (!session) return NOT_SIGNED_IN;
+  const { db, me: profile } = session;
   if (!photo.url?.trim()) return { ok: false, error: "A photograph needs a URL." };
 
   const { count } = await db
@@ -404,6 +367,27 @@ export async function addEventPhoto(
   if (error) return { ok: false, error: error.message };
   revalidatePath(`/dashboard/events/${eventId}`);
   return { ok: true };
+}
+
+/**
+ * Add a YouTube video to an event's gallery.
+ *
+ * Videos are never uploaded here — they go to AAC's YouTube channel and the
+ * gallery holds the link. It is stored in the same table as photographs, in
+ * the same order, with the same required description, so an event's
+ * pictures and films read as one gallery. The link is normalised to the
+ * ordinary watch address whatever form was pasted, so every row looks alike.
+ */
+export async function addEventVideo(eventId: string, link: string): Promise<ActionResult> {
+  const id = youTubeId(link);
+  if (!id) {
+    return {
+      ok: false,
+      error:
+        "That does not look like a YouTube link. On YouTube, press Share under the video, copy the link and paste it here.",
+    };
+  }
+  return addEventPhoto(eventId, { url: youTubeWatch(id), alt: "" });
 }
 
 export async function updateEventPhoto(
