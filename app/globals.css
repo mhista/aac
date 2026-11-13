@@ -186,3 +186,138 @@
     transition-duration:.01ms!important;scroll-behavior:auto!important;
   }
 }
+
+/* ── Dashboard ─────────────────────────────────────────────────────
+   The dashboard is a tool, so it gets a quieter skin than the public site:
+   neutral zinc surfaces, one sans typeface throughout, soft rounded cards,
+   and AAC violet kept for what is active or primary. Everything below is
+   scoped to .dash-ui (the dashboard shell), so the public site is untouched.
+
+   Most of it works by re-pointing the site's own tokens inside the shell —
+   every dashboard screen already draws its borders, washes and secondary
+   text from these variables, so they all change together, with no
+   per-screen edits. */
+.dash-ui{
+  --dash-ink:#18181b;
+  --dash-body:#52525b;
+  --dash-muted:#71717a;
+  --dash-faint:#a1a1aa;
+  --dash-line:#e4e4e7;
+  --dash-wash:#f4f4f5;
+  --dash-page:#fafafa;
+  --dash-card-shadow:0 1px 2px rgb(24 24 27 / .04), 0 10px 28px -14px rgb(24 24 27 / .14);
+
+  --color-text-primary:var(--dash-ink);
+  --color-text-secondary:var(--dash-muted);
+  --color-border-default:var(--dash-line);
+  --color-border-subtle:#efeff1;
+  --color-surface-page-alt:var(--dash-wash);
+  --color-surface-disabled:var(--dash-wash);
+  --color-text-display:var(--dash-ink);
+
+  background:var(--dash-page);
+  letter-spacing:-.006em;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* One typeface. The serif display face and the mono caps are the public
+   site's voice; in a tool they read as decoration. Headings become tight
+   semibold sans, labels become small sentence-case sans. */
+.dash-ui .font-display,
+.dash-ui .display{
+  font-family:var(--font-body);
+  font-weight:600;
+  letter-spacing:-.03em;
+  font-variation-settings:normal;
+}
+.dash-ui .mono{
+  font-family:var(--font-body);
+  font-size:12px;
+  font-weight:500;
+  letter-spacing:0;
+  text-transform:none;
+  color:var(--dash-muted);
+}
+
+/* Cards: every white panel in the dashboard is drawn as
+   `rounded-dash-md border … bg-white`, so this lifts them all. */
+.dash-ui .rounded-dash-md.bg-white{box-shadow:var(--dash-card-shadow)}
+
+/* The active nav item and primary buttons: AAC violet with a soft top
+   highlight, so they read as pressable rather than flat. */
+.dash-active,
+.dash-btn-primary{
+  background:linear-gradient(180deg,var(--color-violet-600) 0%,var(--color-violet-800) 100%);
+  box-shadow:inset 0 1px 0 rgb(255 255 255 / .18), 0 1px 2px rgb(30 11 69 / .25), 0 6px 14px -8px rgb(30 11 69 / .55);
+}
+.dash-btn-primary:hover{filter:brightness(1.12)}
+
+.dash-ui tbody tr{transition:background-color .15s}
+
+.dash-ui :focus-visible{outline:2px solid var(--color-violet-500);outline-offset:2px}
+
+.dash-no-scrollbar{scrollbar-width:none}
+.dash-no-scrollbar::-webkit-scrollbar{display:none}
+
+/* ── Dashboard: dark (the default) ─────────────────────────────────
+   Dark is the dashboard's default; anyone can switch to light from the
+   sidebar and the choice is remembered on that device. Like the rest of the
+   dashboard skin, this works by re-pointing tokens inside the shell, so every
+   screen follows without per-screen changes. The public site has no dark
+   mode and is untouched. */
+.dash-ui{ --dash-line-strong:#d4d4d8; --dash-card:#ffffff; --dash-thead:#fbfbfb; --dash-row-hover:#fafafa; }
+
+.dash-ui.dash-dark{
+  color-scheme:dark;
+
+  --dash-ink:#f4f4f5;
+  --dash-body:#c4c4cc;
+  --dash-muted:#a1a1aa;
+  --dash-faint:#71717a;
+  --dash-line:#27272a;
+  --dash-line-strong:#3f3f46;
+  --dash-wash:#1c1c20;
+  --dash-page:#0b0b0d;
+  --dash-card:#141417;
+  --dash-thead:#18181b;
+  --dash-row-hover:#18181c;
+  --dash-card-shadow:0 1px 0 rgb(255 255 255 / .03) inset, 0 10px 30px -16px rgb(0 0 0 / .8);
+
+  --color-border-subtle:#1f1f23;
+  --color-neutral-paper-alt:#1f1f23;
+  --color-neutral-ink-muted:#a1a1aa;
+  --color-neutral-ink:#f4f4f5;
+
+  /* Violet washes become a translucent glow; violet text lightens so it
+     stays readable on dark. The gradient on primary buttons keeps the
+     brand's real 600–800, so AAC purple still reads as AAC purple. */
+  --color-violet-50:rgb(124 77 224 / .10);
+  --color-violet-100:rgb(124 77 224 / .20);
+  --color-violet-700:#c9b6fb;
+  --color-action-secondary-text:#c9b6fb;
+  --color-text-emphasis:#c9b6fb;
+  --color-action-secondary-border:#5b3aa8;
+  --color-action-secondary-hover-surface:rgb(124 77 224 / .16);
+
+  --color-feedback-success-surface:rgb(34 197 94 / .12);
+  --color-feedback-success-text:#86efac;
+  --color-feedback-warning-surface:rgb(245 158 11 / .13);
+  --color-feedback-warning-text:#fcd34d;
+  --color-feedback-danger-surface:rgb(239 68 68 / .13);
+  --color-feedback-danger-text:#fca5a5;
+  --color-feedback-info-surface:rgb(59 130 246 / .13);
+  --color-feedback-info-text:#93c5fd;
+}
+
+/* White panels, inputs and popovers are written as bg-white across the
+   dashboard (50 places); in dark they become the card surface. */
+.dash-ui.dash-dark .bg-white{background-color:var(--dash-card)}
+.dash-ui.dash-dark .bg-white\/90{background-color:rgb(20 20 23 / .85)}
+.dash-ui.dash-dark .bg-white\/60{background-color:rgb(20 20 23 / .5)}
+.dash-ui.dash-dark .bg-white\/95{background-color:rgb(255 255 255 / .95)}
+.dash-ui.dash-dark .hover\:bg-white:hover{background-color:var(--dash-wash)}
+.dash-ui.dash-dark input::placeholder,
+.dash-ui.dash-dark textarea::placeholder{color:#71717a}
+
+.dash-ui table thead th{background:var(--dash-thead)}
+.dash-ui tbody tr:hover{background:var(--dash-row-hover)}

@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth/session";
 import { canEdit, canRemove } from "@/lib/auth/capabilities";
 import { canPublish } from "@/lib/auth/permissions";
-import { getSession, NOT_SIGNED_IN, formReader, type ActionResult, slugify, uniqueSlug } from "@/lib/cms/shared";
+import { getSession, NOT_SIGNED_IN, formReader, type ActionResult, slugify, uniqueSlug, findBlankDraft } from "@/lib/cms/shared";
 
 /**
  * Programmes.
@@ -29,6 +29,12 @@ export async function createProgrammeAndOpen(): Promise<void> {
   if (!db || !me || !canEdit(me, "programmes")) {
     redirect(`/dashboard/programmes?error=${encodeURIComponent("Your role does not allow creating programmes.")}`);
   }
+
+  /* Reopen an untouched blank draft rather than piling up another one. */
+  const blank = await findBlankDraft(db, "programmes", me.id, "Untitled programme", [
+    "body", "excerpt", "subtitle", "cover",
+  ]);
+  if (blank) redirect(`/dashboard/programmes/${blank}`);
 
   /* A unique placeholder slug, so two people creating one at the same moment
      do not collide on "untitled". */

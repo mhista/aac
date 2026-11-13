@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { canPublish, canWrite, atLeast } from "@/lib/auth/permissions";
-import { getSession, NOT_SIGNED_IN, formReader, type ActionResult, slugify, uniqueSlug } from "@/lib/cms/shared";
+import { getSession, NOT_SIGNED_IN, formReader, type ActionResult, slugify, uniqueSlug, findBlankDraft } from "@/lib/cms/shared";
 import { youTubeId, youTubeWatch } from "@/lib/media/youtube";
 
 /**
@@ -27,6 +27,12 @@ export async function createEvent(): Promise<ActionResult> {
   if (!canWrite(profile)) {
     return { ok: false, error: "Your role does not allow creating events." };
   }
+
+  /* Reopen an untouched blank draft rather than piling up another one. */
+  const blank = await findBlankDraft(db, "events", profile.id, "Untitled event", [
+    "body", "subtitle", "starts_at", "venue", "cover",
+  ]);
+  if (blank) return { ok: true, id: blank };
 
   const slug = await uniqueSlug(db, "events", `untitled-${Date.now().toString(36)}`);
   const { data, error } = await db

@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { getProfile } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
-import { ROLE_LABEL, canPublish, canSeeCrm, atLeast } from "@/lib/auth/permissions";
-import { ArrowRight } from "@/components/ui/Icon";
+import { ROLE_LABEL, canPublish, canSeeCrm, canWrite, atLeast } from "@/lib/auth/permissions";
+import { ArrowRight, ArrowUpRight, Plus } from "@/components/ui/Icon";
+import { BTN } from "@/components/dashboard/ui";
+import { createEventAndOpen } from "@/lib/cms/actions";
+import { createPost } from "@/lib/cms/posts";
 
 export const dynamic = "force-dynamic";
 
@@ -53,59 +56,78 @@ export default async function DashboardHome() {
       : []),
   ];
 
+  const hour = new Date().toLocaleString("en-GB", { hour: "numeric", hour12: false, timeZone: "Africa/Lagos" });
+  const greeting = Number(hour) < 12 ? "Good morning" : Number(hour) < 17 ? "Good afternoon" : "Good evening";
+
   return (
     <div className="mx-auto max-w-[1100px]">
-      <header className="mb-8">
-        <p className="mono mb-2">{ROLE_LABEL[profile.role]}</p>
-        <h1 className="font-display text-[clamp(1.6rem,1.3rem+1.2vw,2.25rem)] text-[var(--color-text-display)]">
-          Good to see you, {first}.
-        </h1>
-        <p className="mt-2 text-[var(--color-text-secondary)]">
-          {scoped
-            ? "This is your chapter's work. Anything you create here goes to a coordinator for review before it appears on the site."
-            : canPublish(profile)
-              ? "You can review and publish content across the organisation."
-              : "Here is what is in progress."}
-        </p>
+      <header className="mb-8 flex flex-wrap items-end justify-between gap-4 sm:mb-10">
+        <div>
+          <p className="mono mb-2">{ROLE_LABEL[profile.role]}</p>
+          <h1 className="font-display text-[28px] leading-tight text-[var(--color-text-display)] sm:text-[34px]">
+            {greeting}, {first}
+          </h1>
+          <p className="mt-2 max-w-[62ch] text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
+            {scoped
+              ? "This is your chapter's work. Anything you create here goes to a coordinator for review before it appears on the site."
+              : canPublish(profile)
+                ? "You can review and publish content across the organisation."
+                : "Here is what is in progress."}
+          </p>
+        </div>
+        <a href="/" target="_blank" rel="noreferrer" className={BTN.secondary}>
+          View website <ArrowUpRight className="h-4 w-4" />
+        </a>
       </header>
 
-      <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {stats.map((s) => (
           <li key={s.label}>
             <Link
               href={s.href}
-              className="group block rounded-dash-md border border-[var(--color-border-default)] bg-white p-5 transition-shadow duration-hover hover:shadow-dash-pop"
+              className="group flex h-full flex-col rounded-dash-md border border-[var(--color-border-default)] bg-white p-5 transition-transform duration-hover hover:-translate-y-0.5"
             >
-              <p className="font-display text-[2rem] leading-none text-[var(--color-text-display)]">{s.value}</p>
-              <p className="mt-2 flex items-center gap-1.5 text-[13px] text-[var(--color-text-secondary)]">
-                {s.label}
-                <ArrowRight className="h-3.5 w-3.5 opacity-0 transition-opacity duration-hover group-hover:opacity-100" />
-              </p>
+              <span className="flex items-center justify-between">
+                <span className="text-[13px] font-medium text-[var(--color-text-secondary)]">{s.label}</span>
+                <ArrowRight className="h-4 w-4 -translate-x-1 text-[var(--color-text-secondary)] opacity-0 transition duration-hover group-hover:translate-x-0 group-hover:opacity-100" />
+              </span>
+              <span className="font-display mt-5 text-[36px] leading-none text-[var(--color-text-display)]">{s.value}</span>
             </Link>
           </li>
         ))}
       </ul>
 
-      <section className="mt-10">
-        <h2 className="mono mb-3">Start something</h2>
-        <div className="flex flex-wrap gap-3">
-          <Link
-            href="/dashboard/events/new"
-            className="inline-flex min-h-[40px] items-center gap-2 rounded-pill bg-[var(--color-action-primary)] px-5 text-[13px] font-medium text-white hover:bg-[var(--color-action-primary-hover)]"
-          >
-            New event <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link
-            href="/dashboard/media"
-            className="inline-flex min-h-[40px] items-center rounded-pill border border-[var(--color-action-secondary-border)] px-5 text-[13px] font-medium text-[var(--color-action-secondary-text)] hover:bg-[var(--color-action-secondary-hover-surface)]"
-          >
+      <section className="mt-6 rounded-dash-md border border-[var(--color-border-default)] bg-white p-5 sm:p-6">
+        <h2 className="text-[15px] font-semibold tracking-[-0.01em]">Start something</h2>
+        <p className="mt-1 text-[13px] text-[var(--color-text-secondary)]">
+          New drafts are private until they are reviewed and published.
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2.5">
+          {/* A real POST, like the button on the events list. The old link
+              went to /dashboard/events/new, a retired route that only
+              bounced back to the list, so "New event" here did nothing. */}
+          {canWrite(profile) && (
+            <form action={createEventAndOpen}>
+              <button type="submit" className={BTN.primary}>
+                <Plus className="h-4 w-4" /> New event
+              </button>
+            </form>
+          )}
+          {canWrite(profile) && (
+            <form action={createPost}>
+              <button type="submit" className={BTN.secondary}>
+                <Plus className="h-4 w-4" /> New article
+              </button>
+            </form>
+          )}
+          <Link href="/dashboard/media" className={BTN.secondary}>
             Upload photographs
           </Link>
         </div>
       </section>
 
       {c === null && (
-        <p className="mt-10 rounded-dash-md border border-dashed border-[var(--color-border-default)] p-5 text-[13px] text-[var(--color-text-secondary)]">
+        <p className="mt-6 rounded-dash-md border border-dashed border-[var(--color-border-default)] p-5 text-[13px] text-[var(--color-text-secondary)]">
           The database is not reachable from this environment yet. Once Supabase is
           configured these counts fill in on their own.
         </p>

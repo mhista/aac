@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getProfile } from "@/lib/auth/session";
 import { canPublish, canWrite, atLeast } from "@/lib/auth/permissions";
-import { getSession, NOT_SIGNED_IN, formReader, type ActionResult, slugify, uniqueSlug } from "@/lib/cms/shared";
+import { getSession, NOT_SIGNED_IN, formReader, type ActionResult, slugify, uniqueSlug, findBlankDraft } from "@/lib/cms/shared";
 
 /**
  * Blog posts.
@@ -36,6 +36,12 @@ export async function createPost(): Promise<void> {
   if (!db || !me || !canWrite(me)) {
     redirect("/dashboard/blog?error=" + encodeURIComponent("Your role does not allow writing posts."));
   }
+
+  /* Reopen an untouched blank draft rather than piling up another one. */
+  const blank = await findBlankDraft(db, "posts", me.id, "Untitled post", [
+    "body", "excerpt", "cover", "category_slug",
+  ]);
+  if (blank) redirect(`/dashboard/blog/${blank}`);
 
   const slug = await uniqueSlug(db, "posts", `untitled-${Date.now().toString(36)}`);
   const { data, error } = await db

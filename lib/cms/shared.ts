@@ -123,3 +123,55 @@ export async function uniqueSlug(
   }
   return `${root}-${Date.now().toString(36)}`;
 }
+
+/* ── Blank drafts ──────────────────────────────────────────────────── */
+
+/**
+ * The newest draft this person started and never touched, or null.
+ *
+ * "New article", "New event" and "New programme" create a row the moment
+ * they are pressed — the editor needs an id to save into. Before this, every
+ * press that was then abandoned (closed the tab, went back, came back
+ * tomorrow) left another "Untitled …" behind, and the lists filled up with
+ * them. Now a press first looks for one of the person's own drafts that is
+ * still exactly as it was created — placeholder title, every content field
+ * empty — and opens that instead.
+ *
+ * A draft with anything in it, even just a title, is never reused. Someone
+ * else's blank draft is never reused. If the lookup fails for any reason the
+ * caller simply creates a new draft, as it always did.
+ */
+export async function findBlankDraft(
+  db: any,
+  table: "events" | "posts" | "programmes",
+  ownerId: string,
+  placeholderTitle: string,
+  emptyColumns: string[]
+): Promise<string | null> {
+  try {
+    let q = db
+      .from(table)
+      .select("id")
+      .eq("status", "draft")
+      .eq("created_by", ownerId)
+      .eq("title", placeholderTitle);
+    for (const col of emptyColumns) q = q.is(col, null);
+    const { data, error } = await q.order("created_at", { ascending: false }).limit(5);
+    if (error || !data?.length) return null;
+
+    if (table !== "events") return data[0].id as string;
+
+    /* An event's photographs live in their own table, so "untouched" also
+       means nothing has been added to its gallery. */
+    for (const row of data as { id: string }[]) {
+      const { count } = await db
+        .from("event_media")
+        .select("id", { count: "exact", head: true })
+        .eq("event_id", row.id);
+      if (!count) return row.id;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}

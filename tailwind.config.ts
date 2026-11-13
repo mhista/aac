@@ -123,9 +123,9 @@ export default {
         "lg": "22px",
         "xl": "32px",
         "pill": "999px",
-        "dash-sm": "6px",
-        "dash-md": "10px",
-        "dash-xs": "4px",
+        "dash-sm": "10px",
+        "dash-md": "18px",
+        "dash-xs": "6px",
         "dash-2xs": "2px",
       },
       boxShadow: {

@@ -4,8 +4,9 @@ import clsx from "clsx";
 /**
  * Dashboard primitives.
  *
- * Denser and squarer than the public site — 13–14px type, 6/10px radii — using
- * the dashboard token set. A tool should not look like a marketing page.
+ * Quiet and modern: one sans typeface, neutral surfaces, soft rounded cards,
+ * AAC violet only for what is primary or active. The shell's .dash-ui scope
+ * (app/globals.css) supplies the colours; these supply the shapes.
  */
 
 /* ── Status ──────────────────────────────────────────────────────────
@@ -24,9 +25,10 @@ export function StatusPill({ status }: { status: string }) {
   const s = STATUS[status] ?? STATUS.draft;
   return (
     <span
-      className="mono inline-block whitespace-nowrap rounded-pill px-2 py-1"
+      className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[12px] font-medium"
       style={{ background: s.surface, color: s.text }}
     >
+      <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full" style={{ background: "currentColor", opacity: 0.7 }} />
       {s.label}
     </span>
   );
@@ -43,13 +45,13 @@ export function PageHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <header className="mb-7 flex flex-wrap items-start justify-between gap-4">
+    <header className="mb-7 flex flex-wrap items-end justify-between gap-4 sm:mb-9">
       <div>
-        <h1 className="font-display text-[clamp(1.5rem,1.25rem+1vw,2rem)] text-[var(--color-text-display)]">
+        <h1 className="font-display text-[26px] leading-tight text-[var(--color-text-display)] sm:text-[32px]">
           {title}
         </h1>
         {description && (
-          <p className="mt-1.5 max-w-[70ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">
+          <p className="mt-2 max-w-[70ch] text-[14px] leading-relaxed text-[var(--color-text-secondary)]">
             {description}
           </p>
         )}
@@ -61,11 +63,11 @@ export function PageHeader({
 
 /* ── Buttons ─────────────────────────────────────────────────────── */
 const btn =
-  "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-pill px-5 text-[13px] font-medium transition-colors duration-hover ease-entrance disabled:opacity-50 disabled:pointer-events-none";
+  "inline-flex min-h-[40px] items-center justify-center gap-2 rounded-xl px-4 text-[13.5px] font-medium transition duration-hover ease-entrance disabled:opacity-50 disabled:pointer-events-none";
 
 export const BTN = {
-  primary: clsx(btn, "bg-[var(--color-action-primary)] text-white hover:bg-[var(--color-action-primary-hover)]"),
-  secondary: clsx(btn, "border border-[var(--color-action-secondary-border)] text-[var(--color-action-secondary-text)] hover:bg-[var(--color-action-secondary-hover-surface)]"),
+  primary: clsx(btn, "dash-btn-primary text-white"),
+  secondary: clsx(btn, "border border-[var(--color-border-default)] bg-white text-[var(--color-text-primary)] shadow-[0_1px_2px_rgb(24_24_27/.05)] hover:bg-[var(--color-surface-page-alt)]"),
   ghost: clsx(btn, "text-[var(--color-text-secondary)] hover:bg-[var(--color-surface-page-alt)] hover:text-[var(--color-text-primary)]"),
   danger: clsx(btn, "border border-[var(--color-feedback-danger-base)] text-[var(--color-feedback-danger-text)] hover:bg-[var(--color-feedback-danger-surface)]"),
 };
@@ -85,7 +87,7 @@ export function Field({
 }) {
   return (
     <div>
-      <label htmlFor={htmlFor} className="mono mb-1.5 block">
+      <label htmlFor={htmlFor} className="mb-1.5 block text-[13px] font-medium text-[var(--color-text-primary)]">
         {label}
         {required && <span className="ml-1 text-[var(--color-feedback-danger-base)]" aria-hidden="true">*</span>}
       </label>
@@ -99,15 +101,15 @@ export function Field({
 }
 
 export const inputCls =
-  "w-full rounded-dash-sm border border-[var(--color-border-default)] bg-white px-3 py-2.5 text-[14px] text-[var(--color-text-primary)] outline-none transition-colors duration-hover focus-visible:border-[var(--color-border-brand)] disabled:bg-[var(--color-surface-disabled)]";
+  "w-full rounded-dash-sm border border-[var(--color-border-default)] bg-white px-3.5 py-2.5 text-[14px] text-[var(--color-text-primary)] shadow-[0_1px_2px_rgb(24_24_27/.04)] outline-none transition duration-hover placeholder:text-[var(--dash-faint)] focus:border-[var(--color-violet-400)] focus:ring-4 focus:ring-[var(--color-violet-100)] disabled:bg-[var(--color-surface-disabled)]";
 
 /* ── Empty state ─────────────────────────────────────────────────── */
 export function EmptyPanel({
   title, body, action,
 }: { title: string; body: string; action?: React.ReactNode }) {
   return (
-    <div className="rounded-dash-md border border-dashed border-[var(--color-border-default)] bg-white px-6 py-14 text-center">
-      <h2 className="font-display text-[1.35rem] text-[var(--color-text-display)]">{title}</h2>
+    <div className="rounded-dash-md border border-dashed border-[var(--dash-line-strong)] bg-white/60 px-6 py-16 text-center">
+      <h2 className="font-display text-[20px] text-[var(--color-text-display)]">{title}</h2>
       <p className="mx-auto mt-2 max-w-[52ch] text-[13px] leading-relaxed text-[var(--color-text-secondary)]">{body}</p>
       {action && <div className="mt-6 flex justify-center">{action}</div>}
     </div>
@@ -130,7 +132,7 @@ export function Notice({
   }[tone];
   return (
     <div
-      className="rounded-dash-sm border-l-2 px-4 py-3 text-[13px] leading-relaxed"
+      className="rounded-dash-sm border-l-[3px] px-4 py-3 text-[13px] leading-relaxed"
       style={{ background: map[0], color: map[1], borderColor: map[2] }}
     >
       {title && <p className="mb-1 font-medium">{title}</p>}
