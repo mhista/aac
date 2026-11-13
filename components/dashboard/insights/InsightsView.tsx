@@ -40,7 +40,7 @@ export function InsightsView({ data }: { data: Insights }) {
       />
 
       {/* ── Headline numbers ──────────────────────────────────── */}
-      <ul className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+      <ul className="grid grid-cols-[repeat(2,minmax(0,1fr))] gap-3 md:grid-cols-[repeat(3,minmax(0,1fr))] lg:grid-cols-[repeat(4,minmax(0,1fr))]">
         {tiles.map((t) => {
           const c = changeLabel(t.m);
           const tone =
@@ -73,7 +73,7 @@ export function InsightsView({ data }: { data: Insights }) {
         Over time{" "}
         <span className="font-normal text-[var(--color-text-secondary)]">· {period.id === "12m" ? "by month" : "by week"}</span>
       </h2>
-      <div className="grid gap-3 lg:grid-cols-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 lg:grid-cols-[repeat(2,minmax(0,1fr))]">
         <ColumnChart title="Events held" points={data.series.events} unit="events" />
         <ColumnChart title="Event attendance" points={data.series.attendance} unit="people" />
         <ColumnChart title="New advocates" points={data.series.advocates} unit="sign-ups" />
@@ -129,7 +129,10 @@ export function InsightsView({ data }: { data: Insights }) {
         </section>
       )}
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+      {/* minmax(0, …): a plain fr column grows to fit its longest unbroken
+          line, so one long article title pushed the whole page sideways
+          under the sidebar. With a 0 minimum the title truncates instead. */}
+      <div className="mt-10 grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.4fr)]">
         {/* ── Work in progress ──────────────────────────────── */}
         <section>
           <h2 className="mb-1 text-[16px] font-semibold tracking-[-0.01em]">In progress now</h2>

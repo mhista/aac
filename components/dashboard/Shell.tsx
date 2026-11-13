@@ -272,7 +272,11 @@ export function DashboardShell({
         </nav>
       </header>
 
-      <main className="min-w-0 lg:pl-[256px]">
+      {/* overflow-x-clip: nothing on a dashboard page may widen the page
+          itself — with a fixed sidebar, a page wider than the window slides
+          its left edge underneath the rail. Wide tables scroll inside their
+          own box instead. */}
+      <main className="min-w-0 overflow-x-clip lg:pl-[256px]">
         <div className="px-4 py-6 sm:px-8 sm:py-10">{children}</div>
       </main>
     </div>
