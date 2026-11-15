@@ -23,7 +23,7 @@ export type Area =
   | "events" | "blog" | "media" | "programmes" | "pages"
   | "chapters" | "advocates" | "applications" | "impactReports"
   | "impactMetrics" | "team" | "campusTeam" | "enquiries"
-  | "users" | "settings" | "audit" | "insights";
+  | "users" | "settings" | "audit" | "insights" | "directory";
 
 type Grant = {
   /** Who may open the section at all. */
@@ -72,6 +72,12 @@ export const CAPABILITIES: Record<Area, Grant> = {
      reaches their own and nobody else's. */
   campusTeam: { read: [...CAMPUS, "board_member"], write: CAMPUS, remove: CAMPUS, scoped: true },
   impactMetrics: { read: ALL_STAFF, write: DIRECTORS, remove: ADMIN },
+
+  /* Pharmacies, cancer centres and screening facilities the public can look
+     up (017_care_directory.sql). National content, kept by the same people
+     who keep the rest of the site; removal is a director's call because
+     unpublishing is the everyday way to take a listing down. */
+  directory: { read: ALL_STAFF, write: EDITORS, remove: DIRECTORS },
 
   /* ── The network ────────────────────────────────────────────────── */
   chapters: { read: [...CAMPUS, "board_member"], write: COORDINATORS, remove: ADMIN, scoped: true },

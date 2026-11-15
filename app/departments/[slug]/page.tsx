@@ -8,6 +8,7 @@ import { pageMetadata, JsonLd, breadcrumbLd } from "@/lib/seo";
 import { getTeam } from "@/lib/cms";
 import { Avatar } from "@/components/media/Avatar";
 import { ORG } from "@/lib/org";
+import { CareDoors } from "@/components/care/CareSections";
 
 export const revalidate = 3600;
 
@@ -128,6 +129,30 @@ export default async function DepartmentPage({ params }: { params: Promise<{ slu
           </Reveal>
         </div>
       </section>
+
+      {/* Medication Access & Global Partnership runs the care directory: the
+          visitor-facing help this department exists to give. */}
+      {dept.slug === "medication-access-partnerships" && (
+        <section className="section" id="how-we-can-help">
+          <div className="wrap">
+            <Reveal>
+              <p className="mono">How we can help</p>
+              <h2 className="display mt-4 max-w-[22ch] text-[clamp(1.75rem,1.3rem+1.9vw,2.5rem)]">
+                Find medicines, treatment and screening near you
+              </h2>
+              <p className="measure mt-5 text-body leading-body text-[var(--color-text-secondary)]">
+                We keep a directory of the pharmacies, cancer centres and health facilities we work with, each with an
+                address and a number to call, so you can find the one closest to you.
+              </p>
+            </Reveal>
+            <Reveal delay={0.08}>
+              <div className="mt-10">
+                <CareDoors />
+              </div>
+            </Reveal>
+          </div>
+        </section>
+      )}
 
       {/* Next */}
       <section className="border-t border-[var(--color-border-default)]">

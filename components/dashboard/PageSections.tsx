@@ -30,6 +30,7 @@ const LABEL: Record<string, { name: string; what: string }> = {
   hero: { name: "Hero", what: "The opening image, headline and tagline." },
   statement: { name: "Statement", what: "The paragraph about why cancer is not only a medical problem." },
   pillarCards: { name: "The six ways we work", what: "The stacking cards for each pillar." },
+  careAccess: { name: "Find care", what: "The link to the Medication Access & Global Partnership department, with pharmacies, cancer centres and screenings." },
   impactStats: { name: "Impact figures", what: "The published numbers, with their methodology notes." },
   leadership: { name: "Leadership", what: "The board and directors, as a preview linking to the About page." },
   featuredEvents: { name: "Recent events", what: "The latest published events, with photographs." },

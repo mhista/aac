@@ -12,6 +12,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { ORG } from "@/lib/org";
 import { currentChapterId } from "@/lib/site/campus";
+import { CARE_COLUMNS, type CarePlace } from "@/lib/care";
 
 /* ── Types ─────────────────────────────────────────────────────────── */
 
@@ -626,4 +627,28 @@ export async function getSiteSettings(): Promise<ResolvedSettings> {
       applicationsOpen: flags.applications_open === true,
     },
   };
+}
+
+/* ── Care directory (017) ──────────────────────────────────────────── */
+
+/**
+ * Every published listing: pharmacies, cancer centres, screening facilities.
+ * One query; the pages split it with the helpers in lib/care.ts. The list is
+ * small enough (hundreds, not tens of thousands) that filtering on the server
+ * page and searching in the browser beats a round trip per keystroke.
+ */
+export async function getCarePlaces(): Promise<CarePlace[]> {
+  return safe<CarePlace[]>(
+    async (db) =>
+      await db
+        .from("care_places")
+        .select(CARE_COLUMNS)
+        .eq("is_published", true)
+        .order("is_partner", { ascending: false })
+        .order("state")
+        .order("name")
+        .limit(2000),
+    [],
+    "care_places"
+  );
 }

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getEvents, getPosts, getProgrammes } from "@/lib/cms";
 import { getCampus, originFor } from "@/lib/site/campus";
+import { SCREENINGS } from "@/lib/care";
 import { ORG } from "@/lib/org";
 
 const BASE = process.env.NEXT_PUBLIC_SITE_URL ?? "https://aaci.ngo";
@@ -32,6 +33,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         "/impact", "/research", "/innovation", "/support", "/donate", "/contact",
         "/get-involved", "/get-involved/advocates", "/get-involved/fellowship",
         "/get-involved/chapters", "/get-involved/volunteer", "/get-involved/partner",
+        "/find-care", "/find-care/pharmacies", "/find-care/cancer-centres", "/find-care/screenings",
+        ...SCREENINGS.map((s) => `/find-care/screenings/${s.slug}`),
       ];
 
   const staticRoutes = paths.map((p) => ({

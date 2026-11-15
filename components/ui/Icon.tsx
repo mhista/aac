@@ -133,3 +133,55 @@ export function Pencil(p: Props) {
     </Svg>
   );
 }
+
+export function Phone(p: Props) {
+  return (
+    <Svg {...p}>
+      <path d="M5 4h3.5l1.5 4-2 1.5a11 11 0 0 0 6.5 6.5L16 14l4 1.5V19a1.5 1.5 0 0 1-1.6 1.5A16 16 0 0 1 3.5 5.6 1.5 1.5 0 0 1 5 4z" />
+    </Svg>
+  );
+}
+
+export function MapPin(p: Props) {
+  return (
+    <Svg {...p}>
+      <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" />
+      <circle cx="12" cy="10" r="2.3" />
+    </Svg>
+  );
+}
+
+export function Chat(p: Props) {
+  return (
+    <Svg {...p}>
+      <path d="M4.5 19.5l1.2-3.6A7.5 7.5 0 1 1 8.4 18.6l-3.9.9z" />
+    </Svg>
+  );
+}
+
+export function Mail(p: Props) {
+  return (
+    <Svg {...p}>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="1.5" />
+      <path d="M4 7l8 6 8-6" />
+    </Svg>
+  );
+}
+
+export function Globe(p: Props) {
+  return (
+    <Svg {...p}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M3.5 12h17M12 3.5c2.3 2.4 3.5 5.2 3.5 8.5s-1.2 6.1-3.5 8.5c-2.3-2.4-3.5-5.2-3.5-8.5S9.7 5.9 12 3.5z" />
+    </Svg>
+  );
+}
+
+export function Clock(p: Props) {
+  return (
+    <Svg {...p}>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7.5V12l3 2" />
+    </Svg>
+  );
+}

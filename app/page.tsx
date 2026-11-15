@@ -8,6 +8,7 @@ import { Values } from "@/components/sections/Values";
 import { CtaBand } from "@/components/sections/CtaBand";
 import { PostsPreview } from "@/components/sections/PostsPreview";
 import { Leadership } from "@/components/sections/Leadership";
+import { CareAccess } from "@/components/sections/CareAccess";
 import { getRecentWork, getPosts, getImpactMetrics, getChapters, getPageSections, getTeam } from "@/lib/cms";
 import { getCampus } from "@/lib/site/campus";
 import { ORG } from "@/lib/org";
@@ -41,8 +42,17 @@ export default async function HomePage() {
 
   /* Order comes from the registry too, so sections can be rearranged without
      a deploy. Anything the registry does not mention keeps its place here. */
-  const order = (type: string) =>
-    sections?.find((s) => s.type === type)?.position ?? 999;
+  const order = (type: string) => {
+    const at = sections?.find((s) => s.type === type)?.position;
+    if (at != null) return at;
+    /* A block added in code before its migration has run sits next to the
+       one it was designed to follow, rather than dropping to the bottom. */
+    if (type === "careAccess") {
+      const after = sections?.find((s) => s.type === "pillarCards")?.position;
+      if (after != null) return after + 0.5;
+    }
+    return 999;
+  };
 
   /* The national figures and the Africa map are claims about the whole
      organisation. On a chapter's own front page they would read as that
@@ -53,6 +63,7 @@ export default async function HomePage() {
   const blocks = [
     { type: "statement", node: <Statement advocates={advocates} campuses={campuses} /> },
     { type: "pillarCards", node: <Pillars /> },
+    { type: "careAccess", node: <CareAccess /> },
     { type: "impactStats", node: <ImpactStats metrics={metrics} /> },
     {
       type: "leadership",

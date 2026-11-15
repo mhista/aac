@@ -65,6 +65,7 @@ const NAV: NavGroup[] = [
       { label: "Impact metrics", href: "/dashboard/impact", area: "impactMetrics", icon: "chart" },
       { label: "Team & directors", href: "/dashboard/team", area: "team", icon: "users" },
       { label: "Enquiries", href: "/dashboard/enquiries", area: "enquiries", icon: "mail" },
+      { label: "Care directory", href: "/dashboard/directory", area: "directory", icon: "pin" },
     ],
   },
   {
