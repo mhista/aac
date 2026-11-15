@@ -179,15 +179,52 @@ export const isCancerCentre = (p: CarePlace) =>
   p.kind === "cancer_centre" || p.services.some((s) => TREATMENTS.some((t) => t.slug === s));
 export const offers = (p: CarePlace, slug: string) => p.services.includes(slug);
 
-/** tel: links want digits and a leading plus, nothing else. */
-export const telHref = (n: string) => `tel:${n.replace(/[^\d+]/g, "")}`;
-
-/** wa.me wants the number in international form without the plus. A local
-    Nigerian number (0803…) becomes 234803…. */
-export function waHref(n: string) {
+/**
+ * A phone number in international digits (no plus), however it was typed.
+ *
+ * Listings are typed by many people, and Nigerian numbers arrive in every
+ * form: "0803 123 4567", "+234 803 123 4567", "+234 (0) 803 123 4567",
+ * "2340803…", or just "803 123 4567". wa.me needs exactly 234803…, and a
+ * wrong form there opens a chat with a stranger or with nobody, so every
+ * shape is brought to the same one. Numbers that are already international
+ * for another country pass through unchanged.
+ */
+export function intlDigits(n: string): string {
   let d = n.replace(/\D/g, "");
-  if (d.startsWith("0") && d.length === 11) d = "234" + d.slice(1);
-  return `https://wa.me/${d}`;
+  if (d.startsWith("00")) d = d.slice(2); // 00234… dialling prefix
+  if (d.startsWith("2340")) d = "234" + d.slice(4); // +234 (0) 803…
+  else if (d.startsWith("0") && d.length >= 9 && d.length <= 11) d = "234" + d.slice(1); // 0803… mobile, 01 / 09 landline
+  else if (d.length === 10 && /^[789]/.test(d)) d = "234" + d; // 803…
+  return d;
+}
+
+/** tel: links: the international form when we can be sure of it, otherwise
+    the digits exactly as typed, which a phone dials as a local call. */
+export const telHref = (n: string) => {
+  const d = intlDigits(n);
+  const international = d.startsWith("234") || n.trim().startsWith("+") || n.trim().startsWith("00");
+  return `tel:${international ? "+" + d : n.replace(/[^\d]/g, "")}`;
+};
+
+/** wa.me wants the international number without the plus. */
+export function waHref(n: string) {
+  return `https://wa.me/${intlDigits(n)}`;
+}
+
+/**
+ * One spelling per state, so "Lagos", "lagos" and "Lagos State" are a single
+ * entry in the "filter by state" list rather than three — otherwise a visitor
+ * who picks one silently misses the listings typed the other ways.
+ */
+export function normState(s: string | null | undefined): string {
+  const t = (s ?? "").trim().replace(/\s+/g, " ").replace(/\s+state$/i, "");
+  if (!t) return "";
+  if (/^(fct|f\.c\.t\.?)$/i.test(t)) return "FCT";
+  return t
+    .toLowerCase()
+    .split(" ")
+    .map((w) => (w ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(" ");
 }
 
 export function mapsHref(p: Pick<CarePlace, "name" | "address" | "city" | "state" | "country">) {

@@ -47,6 +47,35 @@ export async function createCarePlace(): Promise<ActionResult> {
   const { db, me } = session;
   if (!canEdit(me, "directory")) return { ok: false, error: "Your role cannot add to the directory." };
 
+  /* Reopen this person's untouched blank listing instead of adding another.
+     Without this, every "Add a place" that was then abandoned left a "New
+     listing" draft behind — the same pile-up events, articles and
+     programmes had (see findBlankDraft in lib/cms/shared.ts). A listing with
+     anything typed into it is never reused. */
+  try {
+    const { data: blank } = await db
+      .from("care_places")
+      .select("id")
+      .eq("created_by", me.id)
+      .eq("name", "New listing")
+      .eq("is_published", false)
+      .eq("services", "{}")
+      .is("summary", null)
+      .is("address", null)
+      .is("city", null)
+      .is("state", null)
+      .is("phone", null)
+      .is("whatsapp", null)
+      .is("email", null)
+      .is("website", null)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (blank?.id) return { ok: true, id: blank.id as string, message: "Opened your blank listing." };
+  } catch {
+    /* Fall through and create one, as before. */
+  }
+
   const { data, error } = await db
     .from("care_places")
     .insert({ name: "New listing", kind: "hospital", is_published: false, created_by: me.id })

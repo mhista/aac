@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { Search } from "@/components/ui/Icon";
 import { Empty } from "@/components/ui/Empty";
 import { PlaceCard } from "./PlaceCard";
-import { serviceName, type CarePlace } from "@/lib/care";
+import { serviceName, normState, type CarePlace } from "@/lib/care";
 
 /**
  * Search and narrow a list of places by state and town.
@@ -30,7 +30,7 @@ export function PlaceFinder({
 
   const states = useMemo(
     () =>
-      Array.from(new Set(places.map((p) => p.state?.trim()).filter((s): s is string => !!s))).sort((a, b) =>
+      Array.from(new Set(places.map((p) => normState(p.state)).filter((s): s is string => !!s))).sort((a, b) =>
         a.localeCompare(b)
       ),
     [places]
@@ -39,7 +39,7 @@ export function PlaceFinder({
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return places.filter((p) => {
-      if (state && (p.state ?? "").trim() !== state) return false;
+      if (state && normState(p.state) !== state) return false;
       if (!needle) return true;
       const hay = [p.name, p.address, p.city, p.state, p.medicines, p.summary, ...p.services.map(serviceName)]
         .filter(Boolean)
