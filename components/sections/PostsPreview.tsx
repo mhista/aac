@@ -7,18 +7,28 @@ import { ArrowRight } from "@/components/ui/Icon";
 
 export function PostCard({ p }: { p: PostRecord }) {
   return (
-    <Link href={`/blog/${p.slug}`} className="group block h-full overflow-hidden rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] transition-shadow duration-hover ease-entrance hover:shadow-lift">
+    <Link href={`/blog/${p.slug}`} className="group flex h-full flex-col overflow-hidden rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-raised)] transition-shadow duration-hover ease-entrance hover:shadow-lift">
       {p.cover && (
         <Img src={p.cover.url} alt={p.cover.alt} ratio="3/2" sizes="(max-width:768px) 100vw, 33vw"
              imgClassName="transition-transform duration-[600ms] ease-entrance group-hover:scale-[1.03]" />
       )}
-      <div className="p-6">
+      <div className="flex flex-1 flex-col p-6">
         <p className="mono">
           {[p.published_at && new Date(p.published_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }),
             p.read_minutes && `${p.read_minutes} min read`].filter(Boolean).join(" · ")}
         </p>
-        <h3 className="mt-3 font-display text-[1.5rem] leading-heading text-[var(--color-text-display)]">{p.title}</h3>
-        {p.excerpt && <p className="mt-2.5 text-caption leading-body text-[var(--color-text-secondary)]">{p.excerpt}</p>}
+        <h3 className="mt-3 line-clamp-3 font-display text-[1.5rem] leading-heading text-[var(--color-text-display)]">{p.title}</h3>
+        {/* A card is a teaser, so it shows at most three lines of the summary
+            however much was typed into it — the full text is one click away.
+            Without the clamp a long summary made a single card as tall as
+            the article. */}
+        {p.excerpt && (
+          <p className="mt-2.5 line-clamp-3 text-caption leading-body text-[var(--color-text-secondary)]">{p.excerpt}</p>
+        )}
+        <span className="mt-auto inline-flex items-center gap-1.5 pt-5 text-caption font-medium text-[var(--color-text-emphasis)]">
+          Read article
+          <ArrowRight className="h-3.5 w-3.5 transition-transform duration-hover ease-entrance group-hover:translate-x-1" />
+        </span>
       </div>
     </Link>
   );

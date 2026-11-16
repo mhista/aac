@@ -288,6 +288,14 @@ export const NAV = [
       { label: "Partner with us", href: "/get-involved/partner" },
     ],
   },
+  /* Also its own item, not only inside Get Involved: hospitals, pharmacies
+     and organisations looking to partner are a primary audience for the
+     Medication Access & Global Partnership work, and should not have to
+     guess which menu hides them. `wideOnly`: in the desktop bar it appears
+     from 1280px up; on narrower laptops it would squeeze every label onto two
+     lines, so there it stays in the Get Involved menu. The phone menu always
+     lists it. */
+  { label: "Partner with us", href: "/get-involved/partner", wideOnly: true },
 ] as const;
 
 export const FOOTER_NAV = {

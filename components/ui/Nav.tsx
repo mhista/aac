@@ -46,22 +46,24 @@ export function Nav() {
         <nav
           aria-label="Main"
           className={clsx(
-            "pointer-events-auto flex w-full max-w-[1160px] items-center justify-between gap-6 rounded-pill border transition-all duration-standard ease-entrance",
+            "pointer-events-auto flex w-full max-w-[1160px] items-center justify-between gap-3 rounded-pill border sm:gap-6 transition-all duration-standard ease-entrance",
             scrolled
               ? "border-[var(--color-border-subtle)] bg-[rgba(250,248,244,.88)] px-4 py-2 shadow-soft backdrop-blur-[16px] md:px-5 md:py-2.5"
               : "border-transparent bg-[rgba(250,248,244,.72)] px-5 py-3 backdrop-blur-[10px] md:px-6 md:py-3.5"
           )}
         >
-          <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label={`${ORG.name} — home`}>
+          {/* min-w-0 + truncate: on the narrowest phones the name gives way
+              rather than pushing the menu button off the screen. */}
+          <Link href="/" className="flex min-w-0 items-center gap-2.5 lg:shrink-0" aria-label={`${ORG.name} — home`}>
             <img
               src="/aac-icon-96.png"
               alt=""
               width={36}
               height={36}
-              className={clsx("transition-all duration-standard ease-entrance", scrolled ? "h-8 w-8" : "h-9 w-9")}
+              className={clsx("shrink-0 transition-all duration-standard ease-entrance", scrolled ? "h-8 w-8" : "h-9 w-9")}
             />
-            <span className="font-display text-[1.05rem] leading-none text-[var(--color-text-display)] md:text-[1.15rem]">
-              All Against Cancer <span className="text-[0.72em] opacity-70">Initiative</span>
+            <span className="truncate font-display text-[1.05rem] leading-none text-[var(--color-text-display)] md:text-[1.15rem]">
+              All Against Cancer <span className="hidden text-[0.72em] opacity-70 min-[360px]:inline">Initiative</span>
             </span>
           </Link>
 
@@ -70,13 +72,13 @@ export function Nav() {
             {NAV.map((item) => (
               <li
                 key={item.label}
-                className="relative"
+                className={"wideOnly" in item ? "relative hidden xl:block" : "relative"}
                 onMouseEnter={() => "children" in item && setOpenMenu(item.label)}
                 onMouseLeave={() => setOpenMenu(null)}
               >
                 <Link
                   href={item.href}
-                  className="inline-flex min-h-[44px] items-center rounded-pill px-3.5 text-caption text-[var(--color-text-primary)] transition-colors duration-hover hover:bg-[var(--color-action-ghost-hover-surface)]"
+                  className="inline-flex min-h-[44px] items-center whitespace-nowrap rounded-pill px-3.5 text-caption text-[var(--color-text-primary)] transition-colors duration-hover hover:bg-[var(--color-action-ghost-hover-surface)]"
                   aria-haspopup={"children" in item ? "true" : undefined}
                   aria-expanded={"children" in item ? openMenu === item.label : undefined}
                 >
@@ -105,7 +107,12 @@ export function Nav() {
           </ul>
 
           <div className="flex items-center gap-2">
-            <Button href="/donate" size="sm" className="hidden sm:inline-flex" arrow>
+            {/* From md (768px) up only. This project's `sm` is 390px, and at
+                390–430px the logo, Donate and the menu button do not fit side
+                by side — the menu button was pushed off the right edge of most
+                phones, so the menu could not be opened at all. The phone menu
+                has its own Donate button. */}
+            <Button href="/donate" size="sm" className="hidden md:inline-flex" arrow>
               Donate
             </Button>
             <button
@@ -180,7 +187,11 @@ export function Nav() {
                   </Link>
                   {"children" in item && (
                     <ul className="pb-4">
-                      {item.children.map((c) => (
+                      {/* Children that are also top-level items (Partner with
+                          us) are listed once, at the top level. */}
+                      {item.children
+                        .filter((c) => !NAV.some((top) => top.href === c.href))
+                        .map((c) => (
                         <li key={c.href}>
                           <Link
                             href={c.href}
